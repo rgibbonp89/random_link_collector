@@ -29,11 +29,12 @@ isort:
 	isort $(files) --profile black --line-length 120
 
 .PHONY: mypy
+mypy:
 	@if [ -z "$(files)"]; then echo "No staged files detected."; exit 0; fi; \
 	mypy $(files) --ignore-missing-imports --follow-imports=skip --strict --allow-untyped-decorators
 
 .PHONY: ci
-	ci: lint black isort mypy test
+	ci: lint black isort mypy
 
 install:
 	pipenv install

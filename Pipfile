@@ -11,6 +11,8 @@ flake8 = "*"
 mypy = "*"
 pylint = "*"
 click = "*"
+pydantic = "*"
+streamlit = "*"
 
 [dev-packages]
 black = "*"
