@@ -40,4 +40,4 @@ git_do:
 	git add .; git commit -m $"{message}"; git push
 
 run:
-	pipenv run streamlit run src/Submit.py
+	pipenv run streamlit run app/Submit.py

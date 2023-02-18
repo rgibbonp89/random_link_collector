@@ -33,7 +33,7 @@ with recent_tab:
 
 
 with search_tab:
-    local_css("./src/pages/style.css")
+    local_css("./app/pages/style.css")
     remote_css("https://fonts.googleapis.com/icon?family=Material+Icons")
     selected = st.text_input("", "")
     button_clicked = st.button("OK")
