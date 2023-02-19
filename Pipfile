@@ -17,6 +17,8 @@ streamlit-option-menu = "*"
 flask = "*"
 google-cloud = "*"
 google-cloud-datastore = "*"
+openai = "*"
+async-openai = "*"
 
 [dev-packages]
 black = "*"
