@@ -14,6 +14,9 @@ click = "*"
 pydantic = "*"
 streamlit = "*"
 streamlit-option-menu = "*"
+flask = "*"
+google-cloud = "*"
+google-cloud-datastore = "*"
 
 [dev-packages]
 black = "*"
