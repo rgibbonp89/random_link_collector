@@ -10,7 +10,7 @@ doc_ref = db.collection("articles")
 
 docs = doc_ref.stream()
 
-recent_tab, search_tab = st.tabs(["Recent", "Search", "All"])
+recent_tab, search_tab = st.tabs(["Recent", "Search"])
 
 list_in_first_tab = [doc for doc in docs]
 
