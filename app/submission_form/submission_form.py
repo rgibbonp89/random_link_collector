@@ -50,5 +50,6 @@ def create_text_submission_form() -> None:
                     "Name": name_input,
                     "AutoSummary": completion.choices[0].text,
                     "URL": url_input,
+                    "MySummary": "",
                 }
             )

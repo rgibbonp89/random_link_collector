@@ -1,6 +1,5 @@
 import streamlit as st
 from google.cloud import firestore
-import os
 from pages.pages_utils.search_bar import local_css, remote_css
 
 st.set_page_config(page_title="Articles")
@@ -14,13 +13,6 @@ recent_tab, search_tab = st.tabs(["Recent", "Search"])
 
 list_in_first_tab = [doc for doc in docs]
 
-## make functions out of the below
-## create text entry
-## how will it update the firestore DB? post request?
-## in the initial chatgpt entry, async/await entry into the firestore DB?
-## what tech is needed for this?
-
-
 with recent_tab:
     for l in list_in_first_tab:
         with st.expander(l.to_dict()["Name"]):
@@ -30,15 +22,34 @@ with recent_tab:
                 )
                 if edit:
                     with st.form(f"""Edit {l.to_dict()["Name"]}"""):
-                        st.text_input("Article name: ", value=l.to_dict()["Name"])
-                        st.text_input("Article url: ", value=l.to_dict()["URL"])
-                        st.text_area("Auto-summary: ", l.to_dict()["AutoSummary"])
+                        name = st.text_input(
+                            "Article name: ", value=l.to_dict()["Name"]
+                        )
+                        article_url = st.text_input(
+                            "Article url: ", value=l.to_dict()["URL"]
+                        )
+                        autosummary = st.text_area(
+                            "Auto-summary: ", l.to_dict()["AutoSummary"]
+                        )
+                        mysummary = st.text_area(
+                            "My summary: ", l.to_dict().get("MySummary")
+                        )
                         submit_changes = st.form_submit_button("OK")
+                        if submit_changes:
+                            doc_ref.document(l.id).set(
+                                {
+                                    "Name": name,
+                                    "URL": article_url,
+                                    "AutoSummary": autosummary,
+                                    "MySummary": mysummary,
+                                }
+                            )
 
                 else:
                     st.write("Article name: ", l.to_dict()["Name"])
                     st.write("Article url: ", l.to_dict()["URL"])
                     st.write("Auto-summary: ", l.to_dict()["AutoSummary"])
+                    st.write("My summary: ", l.to_dict().get("MySummary"))
 
 with search_tab:
     local_css("./app/pages/style.css")
