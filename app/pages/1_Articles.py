@@ -5,12 +5,12 @@ from pages.pages_utils.search_bar import local_css, remote_css
 
 st.set_page_config(page_title="Articles")
 
-db = firestore.Client.from_service_account_json(os.environ.get("FS_KEY"))
+db = firestore.Client.from_service_account_json("./.keys/firebase.json")
 doc_ref = db.collection("articles")
 
 docs = doc_ref.stream()
 
-recent_tab, search_tab, all_tab = st.tabs(["Recent", "Search", "All"])
+recent_tab, search_tab = st.tabs(["Recent", "Search", "All"])
 
 list_in_first_tab = [doc for doc in docs]
 
@@ -19,10 +19,6 @@ list_in_first_tab = [doc for doc in docs]
 ## how will it update the firestore DB? post request?
 ## in the initial chatgpt entry, async/await entry into the firestore DB?
 ## what tech is needed for this?
-
-
-def example_callback(doc_ref, text):
-    return doc_ref.document("dUmVNAYWPEd9B8kpNllC").put
 
 
 with recent_tab:
@@ -49,7 +45,3 @@ with search_tab:
     remote_css("https://fonts.googleapis.com/icon?family=Material+Icons")
     selected = st.text_input("", "")
     button_clicked = st.button("OK")
-
-with all_tab:
-    with st.expander("See explanation"):
-        st.markdown("## Some header text")

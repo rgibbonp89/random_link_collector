@@ -10,6 +10,6 @@ st.set_page_config(
 )
 
 
-st.write("# Welcome to the note saver!")
+st.write("# Welcome to the article saver!")
 
 create_text_submission_form()
