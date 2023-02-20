@@ -5,9 +5,12 @@ import os
 import string
 import random
 import openai
+from dotenv import load_dotenv
 
+load_dotenv()
 
-db = firestore.Client.from_service_account_json(os.environ.get("FS_KEY"))
+db = firestore.Client.from_service_account_json("./.keys/firebase.json")
+
 openai.api_key = os.environ.get("OPENAI_KEY")
 
 # Set up the model and prompt
