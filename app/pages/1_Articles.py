@@ -13,12 +13,15 @@ recent_tab, search_tab = st.tabs(["Recent", "Search"])
 
 list_in_first_tab = [doc for doc in docs]
 
+
 with recent_tab:
     for l in list_in_first_tab:
         with st.expander(l.to_dict()["Name"]):
             with st.container():
                 edit = st.radio(
-                    f"""Edit: "{l.to_dict()["Name"]}"?""", [True, False], index=1
+                    f"""Edit: "{l.to_dict()["Name"]}"?""",
+                    options=[True, False],
+                    index=1,
                 )
                 if edit:
                     with st.form(f"""Edit {l.to_dict()["Name"]}"""):

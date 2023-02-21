@@ -41,3 +41,7 @@ git_do:
 
 run:
 	pipenv run streamlit run app/Submit.py
+
+dockerr:
+	docker build . -t streamlit-app
+	docker run -p 8080:8080 streamlit-app
