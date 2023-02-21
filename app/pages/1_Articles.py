@@ -1,6 +1,8 @@
+from typing import Generator
+
 import streamlit as st
 from google.cloud import firestore
-from google.cloud.firestore_v1 import Client
+from google.cloud.firestore_v1 import Client, DocumentSnapshot, CollectionReference
 from pathlib import Path
 from pages.pages_utils.search_bar import local_css, remote_css
 
@@ -9,14 +11,15 @@ st.set_page_config(page_title="Articles")
 db: Client = firestore.Client.from_service_account_json(
     f"{Path(__file__).parent.parent.parent}/.keys/firebase.json"
 )
-doc_ref = db.collection("articles")
+doc_ref: CollectionReference = db.collection("articles")
 
 docs = doc_ref.stream()
 
 recent_tab, search_tab = st.tabs(["Recent", "Search"])
 
-list_in_first_tab = [doc for doc in docs]
-
+list_in_first_tab = sorted(
+    [doc for doc in docs], key=lambda x: x.create_time, reverse=True
+)
 
 with recent_tab:
     for l in list_in_first_tab:
@@ -36,7 +39,7 @@ with recent_tab:
                             "Article url: ", value=l.to_dict()["URL"]
                         )
                         autosummary = st.text_area(
-                            "Auto-summary: ", l.to_dict()["AutoSummary"]
+                            "Auto-summary: ", l.to_dict().get("AutoSummary")
                         )
                         mysummary = st.text_area(
                             "My summary: ", l.to_dict().get("MySummary")
@@ -62,3 +65,11 @@ with search_tab:
     remote_css("https://fonts.googleapis.com/icon?family=Material+Icons")
     selected = st.text_input("", "")
     button_clicked = st.button("OK")
+    if button_clicked:
+        result_docs = doc_ref.where("Name", "==", selected).stream()
+        for r in result_docs:
+            with st.expander(r.to_dict().get("Name")):
+                st.write("Article name: ", r.to_dict()["Name"])
+                st.write("Article url: ", r.to_dict()["URL"])
+                st.write("Auto-summary: ", r.to_dict().get("AutoSummary"))
+                st.write("My summary: ", r.to_dict().get("MySummary"))

@@ -12,6 +12,7 @@ from google.cloud.firestore_v1 import DocumentReference
 from google.cloud.firestore_v1.client import Client
 from openai import Completion
 from pathlib import Path
+from async_openai import OpenAI, settings, CompletionResponse
 
 
 load_dotenv()
@@ -23,10 +24,11 @@ db: Client = firestore.Client.from_service_account_json(
 
 openai.api_key = os.environ.get("OPENAI_KEY")
 
+
 # Set up the model and prompt
 MODEL_ENGINE = "text-davinci-003"
 MAX_TOKENS = 4000
-TEMPERATURE = 0.01
+TEMPERATURE = 0.9
 ID_LENGTH = 15
 
 
