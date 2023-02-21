@@ -12,7 +12,6 @@ from google.cloud.firestore_v1 import DocumentReference
 from google.cloud.firestore_v1.client import Client
 from openai import Completion
 from pathlib import Path
-from async_openai import OpenAI, settings, CompletionResponse
 
 
 load_dotenv()
