@@ -1,8 +1,6 @@
-from typing import Generator
-
 import streamlit as st
 from google.cloud import firestore
-from google.cloud.firestore_v1 import Client, DocumentSnapshot, CollectionReference
+from google.cloud.firestore_v1 import Client, CollectionReference
 from pathlib import Path
 from pages.pages_utils.search_bar import local_css, remote_css
 
