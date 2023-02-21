@@ -1,10 +1,14 @@
 import streamlit as st
 from google.cloud import firestore
+from google.cloud.firestore_v1 import Client
+from pathlib import Path
 from pages.pages_utils.search_bar import local_css, remote_css
 
 st.set_page_config(page_title="Articles")
 
-db = firestore.Client.from_service_account_json("./.keys/firebase.json")
+db: Client = firestore.Client.from_service_account_json(
+    f"{Path(__file__).parent.parent.parent}/.keys/firebase.json"
+)
 doc_ref = db.collection("articles")
 
 docs = doc_ref.stream()
@@ -47,7 +51,6 @@ with recent_tab:
                                     "MySummary": mysummary,
                                 }
                             )
-
                 else:
                     st.write("Article name: ", l.to_dict()["Name"])
                     st.write("Article url: ", l.to_dict()["URL"])
@@ -55,7 +58,7 @@ with recent_tab:
                     st.write("My summary: ", l.to_dict().get("MySummary"))
 
 with search_tab:
-    local_css("./app/pages/style.css")
+    local_css(f"{Path(__file__).parent}/style.css")
     remote_css("https://fonts.googleapis.com/icon?family=Material+Icons")
     selected = st.text_input("", "")
     button_clicked = st.button("OK")
