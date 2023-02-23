@@ -20,6 +20,7 @@ google-cloud-datastore = "*"
 openai = "*"
 async-openai = "*"
 python-dotenv = "*"
+fuzzywuzzy = "*"
 
 [dev-packages]
 black = "*"

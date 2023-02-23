@@ -27,7 +27,7 @@ openai.api_key = os.environ.get("OPENAI_KEY")
 # Set up the model and prompt
 MODEL_ENGINE = "text-davinci-003"
 MAX_TOKENS = 4000
-TEMPERATURE = 0.9
+TEMPERATURE = 0.01
 ID_LENGTH = 15
 
 
