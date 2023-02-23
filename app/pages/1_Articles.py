@@ -81,7 +81,9 @@ with search_tab:
     button_clicked = st.button("OK")
     if button_clicked:
         search_strictness = (
-            int(search_strictness) if search_strictness is not None else 30
+            int(search_strictness)
+            if search_strictness is not None
+            else SEARCH_STRICTNESS_CONSTANT
         )
         result_docs = doc_ref.stream()
         result_docs_pruned = [
