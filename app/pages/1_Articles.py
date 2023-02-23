@@ -3,6 +3,10 @@ from google.cloud import firestore
 from google.cloud.firestore_v1 import Client, CollectionReference
 from pathlib import Path
 from pages.pages_utils.search_bar import local_css, remote_css
+from fuzzywuzzy import fuzz
+
+
+SEARCH_STRICTNESS_CONSTANT = 30
 
 st.set_page_config(page_title="Articles")
 
@@ -55,17 +59,40 @@ with recent_tab:
                 else:
                     st.write("Article name: ", l.to_dict()["Name"])
                     st.write("Article url: ", l.to_dict()["URL"])
-                    st.write("Auto-summary: ", l.to_dict()["AutoSummary"])
+                    st.write("Auto-summary: ", l.to_dict().get("AutoSummary"))
                     st.write("My summary: ", l.to_dict().get("MySummary"))
+
+
+mapper = {
+    "My summary": "MySummary",
+    "Auto-summary": "AutoSummary",
+    "Name": "Name",
+    "URL": "URL",
+}
 
 with search_tab:
     local_css(f"{Path(__file__).parent}/style.css")
     remote_css("https://fonts.googleapis.com/icon?family=Material+Icons")
-    selected = st.text_input("", "")
+    selection = st.text_input("Search term", "")
+    search_strictness = st.text_input(
+        "Strictness",
+    )
+    option = st.selectbox("Search field", ("Name", "URL", "Auto-summary", "My summary"))
     button_clicked = st.button("OK")
     if button_clicked:
-        result_docs = doc_ref.where("Name", "==", selected).stream()
-        for r in result_docs:
+        search_strictness = (
+            int(search_strictness)
+            if search_strictness is not None
+            else SEARCH_STRICTNESS_CONSTANT
+        )
+        result_docs = doc_ref.stream()
+        result_docs_pruned = [
+            r_doc
+            for r_doc in result_docs
+            if fuzz.token_sort_ratio(r_doc.to_dict().get(mapper.get(option)), selection)
+            > search_strictness
+        ]
+        for r in result_docs_pruned:
             with st.expander(r.to_dict().get("Name")):
                 st.write("Article name: ", r.to_dict()["Name"])
                 st.write("Article url: ", r.to_dict()["URL"])
