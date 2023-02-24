@@ -13,6 +13,7 @@ from google.cloud.firestore_v1.client import Client
 from openai import Completion
 from pathlib import Path
 
+from integrations.logins.news_login import authenticate_news_site
 
 load_dotenv()
 
@@ -31,7 +32,7 @@ TEMPERATURE = 0.01
 ID_LENGTH = 15
 
 
-def create_text_submission_form() -> None:
+def create_text_submission_form(service) -> None:
     with st.form("my_form"):
         st.write("Save new article")
         url_input = st.text_input("Article URL")
@@ -57,6 +58,7 @@ def create_text_submission_form() -> None:
                 url_input=url_input,
                 my_summary=my_summary,
             )
+            authenticate_news_site(service)
             completion: Completion = openai.Completion.create(
                 engine=MODEL_ENGINE,
                 prompt=prompt,
