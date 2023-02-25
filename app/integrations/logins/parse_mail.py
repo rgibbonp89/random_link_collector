@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import base64
 import re
-from datetime import date, timedelta
+from datetime import date
 from typing import Dict
 
 from bs4 import BeautifulSoup
@@ -10,15 +10,13 @@ from googleapiclient.discovery import Resource
 from readability import Document
 
 
-def get_message_content(service: Resource) -> Dict[str, str]:
-    today = date.today()
-    window = today - timedelta(days=1)
+def get_message_content(service: Resource, mail_search_query: str) -> Dict[str, str]:
     messages = (
         service.users()
         .messages()
         .list(
             userId="me",
-            q=f"""subject:'Your FT.com access code' after: {window.strftime('%Y/%m/%d')}""",
+            q=mail_search_query,
         )
         .execute()
     )

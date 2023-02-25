@@ -40,10 +40,10 @@ with recent_tab:
                         article_url = st.text_input(
                             "Article url: ", value=l.to_dict()["URL"]
                         )
-                        autosummary = st.text_area(
+                        autosummary = st.markdown(
                             "Auto-summary: ", l.to_dict().get("AutoSummary")
                         )
-                        mysummary = st.text_area(
+                        mysummary = st.markdown(
                             "My summary: ", l.to_dict().get("MySummary")
                         )
                         submit_changes = st.form_submit_button("OK")
@@ -59,7 +59,9 @@ with recent_tab:
                 else:
                     st.write("Article name: ", l.to_dict()["Name"])
                     st.write("Article url: ", l.to_dict()["URL"])
-                    st.write("Auto-summary: ", l.to_dict().get("AutoSummary"))
+                    st.write(
+                        "Auto-summary:", f""""\n{l.to_dict().get("AutoSummary")}"""
+                    )
                     st.write("My summary: ", l.to_dict().get("MySummary"))
 
 
