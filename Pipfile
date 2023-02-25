@@ -21,6 +21,7 @@ openai = "*"
 async-openai = "*"
 python-dotenv = "*"
 fuzzywuzzy = "*"
+mail = "*"
 
 [dev-packages]
 black = "*"

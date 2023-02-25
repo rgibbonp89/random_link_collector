@@ -13,6 +13,9 @@ from google.cloud.firestore_v1.client import Client
 from openai import Completion
 from pathlib import Path
 
+from integrations.logins.news_login import (
+    authenticate_news_site_and_return_cleaned_content,
+)
 
 load_dotenv()
 
@@ -26,12 +29,12 @@ openai.api_key = os.environ.get("OPENAI_KEY")
 
 # Set up the model and prompt
 MODEL_ENGINE = "text-davinci-003"
-MAX_TOKENS = 4000
+MAX_TOKENS = 500
 TEMPERATURE = 0.01
 ID_LENGTH = 15
 
 
-def create_text_submission_form() -> None:
+def create_text_submission_form(service) -> None:
     with st.form("my_form"):
         st.write("Save new article")
         url_input = st.text_input("Article URL")
@@ -41,21 +44,24 @@ def create_text_submission_form() -> None:
         submitted = st.form_submit_button("Submit")
 
         if submitted:
-            prompt = (
-                f"What are the main arguments in this article: {url_input}? Please provide your answer in bullet points."
-                if not autosummary_prompt
-                else autosummary_prompt
-            )
             st.write("**URL:**", url_input)
             st.write("**Name:**", name_input)
             st.text_area("**My summary:**", my_summary)
-            st.text_area("**Auto-summary prompt:**", prompt)
             doc_id = add_synchronous_components_to_db(
                 db=db,
                 collection_name="articles",
                 name_input=name_input,
                 url_input=url_input,
                 my_summary=my_summary,
+            )
+            formatted_text = authenticate_news_site_and_return_cleaned_content(
+                service, article_url=url_input
+            )
+            prompt = (
+                f"What are the main arguments in this text: {formatted_text}? "
+                f"Please provide your answer in bullet points in markdown."
+                if not autosummary_prompt
+                else autosummary_prompt
             )
             completion: Completion = openai.Completion.create(
                 engine=MODEL_ENGINE,
@@ -66,7 +72,7 @@ def create_text_submission_form() -> None:
             )
             asyncio.run(
                 add_async_components_to_db(
-                    db, "articles", doc_id, completion.choices[0].text
+                    db, "articles", doc_id, completion.choices[0].text, prompt=prompt
                 )
             )
 
@@ -91,12 +97,13 @@ def add_synchronous_components_to_db(
 
 
 async def add_async_components_to_db(
-    db: Client, collection_name: str, doc_id: str, chat_gpt_response
+    db: Client, collection_name: str, doc_id: str, chat_gpt_response: str, prompt: str
 ) -> None:
     doc_ref: DocumentReference = db.collection(collection_name).document(doc_id)
     doc_ref.update(
         {
             "AutoSummary": chat_gpt_response,
+            "Prompt": prompt,
         }
     )
 
