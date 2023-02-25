@@ -40,10 +40,10 @@ with recent_tab:
                         article_url = st.text_input(
                             "Article url: ", value=l.to_dict()["URL"]
                         )
-                        autosummary = st.markdown(
+                        autosummary = st.text_area(
                             "Auto-summary: ", l.to_dict().get("AutoSummary")
                         )
-                        mysummary = st.markdown(
+                        mysummary = st.text_area(
                             "My summary: ", l.to_dict().get("MySummary")
                         )
                         submit_changes = st.form_submit_button("OK")
