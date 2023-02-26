@@ -2,15 +2,18 @@ from __future__ import print_function
 
 import base64
 import re
-from datetime import date
-from typing import Dict
+from typing import Dict, Callable
 
 from bs4 import BeautifulSoup
 from googleapiclient.discovery import Resource
 from readability import Document
 
 
-def get_message_content(service: Resource, mail_search_query: str) -> Dict[str, str]:
+def get_message_content(
+    service: Resource,
+    mail_search_query: str,
+    _publication_specific_message_details_fn: Callable,
+) -> Dict[str, str]:
     messages = (
         service.users()
         .messages()
@@ -29,6 +32,7 @@ def get_message_content(service: Resource, mail_search_query: str) -> Dict[str, 
             message["payload"]["parts"][0]["body"]["data"].encode("ASCII")
         )
         text = BeautifulSoup(Document(msg_str).summary())
-        code = re.findall(r"\*.*?\*(?!\.\S)", text.text)[0].replace("*", "")
-        codes_and_timestamps.append({"code": code, "date": message.get("internalDate")})
+        codes_and_timestamps.append(
+            _publication_specific_message_details_fn(message, text)
+        )
     return sorted(codes_and_timestamps, key=lambda x: x.get("date"))[-1]

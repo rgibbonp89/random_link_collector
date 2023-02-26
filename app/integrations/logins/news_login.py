@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-
+from typing import Callable
 
 from integrations.logins.login_configs import parse_article_url_for_correct_login_flow
 
@@ -14,8 +14,5 @@ def authenticate_news_site_and_return_cleaned_content(service, article_url) -> s
         query=window
     )
     return _cleaner_fn(
-        news_source_configuration=news_source_configuration,
-        service=service,
-        search_query=search_query,
-        article_url=article_url,
+        service=service, article_url=article_url, search_query=search_query
     )
