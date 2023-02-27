@@ -4,7 +4,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from pathlib import Path
-from googleapiclient.discovery import build
+from googleapiclient.discovery import build, Resource
 import os
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
@@ -14,7 +14,7 @@ REDIRECT_URI = "http://localhost:8080"
 PORT = 8080
 
 
-def authenticate_user_and_provide_gmail_service():
+def authenticate_user_and_provide_gmail_service() -> Resource:
     creds = None
 
     if os.path.exists(TOKEN_PATH):
