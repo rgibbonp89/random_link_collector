@@ -63,16 +63,20 @@ def create_text_submission_form(service) -> None:
                 if not autosummary_prompt
                 else autosummary_prompt
             )
-            completion: Completion = openai.Completion.create(
-                engine=MODEL_ENGINE,
-                prompt=prompt,
-                n=1,
-                max_tokens=MAX_TOKENS,
-                temperature=TEMPERATURE,
-            )
+            try:
+                completion: Completion = openai.Completion.create(
+                    engine=MODEL_ENGINE,
+                    prompt=prompt,
+                    n=1,
+                    max_tokens=MAX_TOKENS,
+                    temperature=TEMPERATURE,
+                )
+                saved_text = completion.choices[0].text
+            except openai.error.InvalidRequestError as exception:
+                saved_text = exception.user_message
             asyncio.run(
                 add_async_components_to_db(
-                    db, "articles", doc_id, completion.choices[0].text, prompt=prompt
+                    db, "articles", doc_id, saved_text, prompt=prompt
                 )
             )
 
