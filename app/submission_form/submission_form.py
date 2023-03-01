@@ -72,7 +72,7 @@ def create_text_submission_form(service) -> None:
                     max_tokens=MAX_TOKENS,
                     temperature=TEMPERATURE,
                 )
-                saved_text = completion.choices[0].text
+                saved_text = completion.choices[0].text.replace("•", "*")
             except openai.error.InvalidRequestError as exception:
                 saved_text = exception.user_message
             asyncio.run(
