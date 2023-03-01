@@ -4,12 +4,14 @@ from integrations.logins.login_configs.base_login_config import SiteConfig
 from integrations.logins.login_configs.news_login_configs import (
     FTLoginConfig,
     SubstackLoginConfig,
+    ForeignAffairsLoginConfig,
 )
 
 
 class SiteAuthenticator(Enum):
     ft_authenticator = FTLoginConfig
     substack_authenticator = SubstackLoginConfig
+    foreign_affairs_authenticator = ForeignAffairsLoginConfig
     general_authenticator = None
 
 
@@ -23,6 +25,6 @@ def parse_article_url_for_correct_login_flow(
     if "wsj.com" in article_url:
         raise NotImplementedError
     if "foreignaffairs.com" in article_url:
-        raise NotImplementedError
+        return SiteAuthenticator.foreign_affairs_authenticator.value
     else:
         return SiteAuthenticator.general_authenticator.value

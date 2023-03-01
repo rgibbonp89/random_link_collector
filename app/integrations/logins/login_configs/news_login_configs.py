@@ -46,6 +46,21 @@ SUBSTACK_DATA_LOGIN_REDIRECT = {
     "captcha_response": "null",
 }
 
+FOREIGN_AFFAIRS_LOGIN_REDIRECT = {
+    # Need to grab all of these from the page source
+    "form_id": "fa_user_login_form",
+    "op": "Sign In",
+    "name": os.environ.get("FA_EMAIL"),
+    "password": os.environ.get("FA_PASSWORD"),
+}
+
+FA_HEADER = {
+    "referer": os.environ.get("FA_REFERER"),
+    "user-agent": os.environ.get("FA_USER_AGENT"),
+}
+
+FA_MISSING_ATTS = ["captcha_sid", "captcha_token", "form_build_id", "captcha_response"]
+
 
 class FTLoginConfig(SiteConfig):
     search_query_gmail = """subject:'Your FT.com access code' after: {query}"""
@@ -156,4 +171,42 @@ class SubstackLoginConfig(SiteConfig):
             SESSION_COOKIES_KEY,
             sess,
         )
+        return sess
+
+
+class ForeignAffairsLoginConfig(SiteConfig):
+    search_query_gmail = (
+        """subject:"One-time login link to Foreign Affairs Website" after: {query}"""
+    )
+    login_url = "https://www.foreignaffairs.com/user/login"
+    firestore_session_id = "foreign_affairs_session"
+    data_login_redirect = FOREIGN_AFFAIRS_LOGIN_REDIRECT
+
+    def extract_login_code_from_mail(
+        self, msg_str: str, message: Resource
+    ) -> Dict[str, str]:
+        code = (
+            BeautifulSoup(msg_str, "html")
+            .find_all("a", attrs={"href": re.compile("^https://")})[0]
+            .get("href")
+        )
+        return {"code": code, "date": message.get("internalDate")}
+
+    def request_code_for_login_and_create_session(
+        self,
+        service: Resource,
+        search_query: str,
+        sess: Session,
+        doc_ref: CollectionReference,
+    ) -> Session:
+        text = sess.get(self.login_url)
+        doc = BeautifulSoup(text.text)
+        update_dict = {
+            missing_attribute: doc.find(
+                "input", {"name": missing_attribute}, value=True
+            )["value"]
+            for missing_attribute in FA_MISSING_ATTS
+        }
+        self.data_login_redirect.update(update_dict)
+        sess.post(self.login_url, self.data_login_redirect, headers=FA_HEADER)
         return sess

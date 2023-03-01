@@ -32,6 +32,7 @@ MODEL_ENGINE = "text-davinci-003"
 MAX_TOKENS = 500
 TEMPERATURE = 0.01
 ID_LENGTH = 15
+ARTICLE_COLLECTION = "articles"
 
 
 def create_text_submission_form(service) -> None:
@@ -49,7 +50,7 @@ def create_text_submission_form(service) -> None:
             st.text_area("**My summary:**", my_summary)
             doc_id = add_synchronous_components_to_db(
                 db=db,
-                collection_name="articles",
+                collection_name=ARTICLE_COLLECTION,
                 name_input=name_input,
                 url_input=url_input,
                 my_summary=my_summary,
@@ -76,7 +77,12 @@ def create_text_submission_form(service) -> None:
                 saved_text = exception.user_message
             asyncio.run(
                 add_async_components_to_db(
-                    db, "articles", doc_id, saved_text, prompt=prompt
+                    db,
+                    "articles",
+                    doc_id,
+                    saved_text,
+                    prompt=prompt,
+                    cleaned_text=formatted_text,
                 )
             )
 
@@ -101,13 +107,19 @@ def add_synchronous_components_to_db(
 
 
 async def add_async_components_to_db(
-    db: Client, collection_name: str, doc_id: str, chat_gpt_response: str, prompt: str
+    db: Client,
+    collection_name: str,
+    doc_id: str,
+    chat_gpt_response: str,
+    prompt: str,
+    cleaned_text: str,
 ) -> None:
     doc_ref: DocumentReference = db.collection(collection_name).document(doc_id)
     doc_ref.update(
         {
             "AutoSummary": chat_gpt_response,
             "Prompt": prompt,
+            "CleanedText": cleaned_text,
         }
     )
 
