@@ -51,9 +51,12 @@ def authentication_and_parse_flow(
 def authenticate_news_site_and_return_cleaned_content(service, article_url) -> str:
     today = date.today()
     window = today - timedelta(days=1)
-    config_object: Union[
-        Type[SiteConfig], None
-    ] = parse_article_url_for_correct_login_flow(article_url)
+    try:
+        config_object: Union[
+            Type[SiteConfig], None
+        ] = parse_article_url_for_correct_login_flow(article_url)
+    except NotImplementedError:
+        config_object = None
     return authentication_and_parse_flow(
         article_url=article_url,
         site_config=config_object,
