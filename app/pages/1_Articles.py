@@ -62,8 +62,8 @@ with recent_tab:
                     st.write(
                         "Auto-summary:",
                         f"""\n{l.to_dict().get("AutoSummary")}""".replace(
-                            "•", "*"
-                        ).replace("-", "*"),
+                            "•", "* "
+                        ).replace("-", "* "),
                     )
                     st.write("My summary: ", l.to_dict().get("MySummary"))
 
