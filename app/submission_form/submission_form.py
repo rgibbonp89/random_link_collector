@@ -28,7 +28,7 @@ openai.api_key = os.environ.get("OPENAI_KEY")
 
 
 # Set up the model and prompt
-MODEL_ENGINE = "text-davinci-003"
+MODEL_ENGINE = "gpt-3.5-turbo"
 MAX_TOKENS = 500
 TEMPERATURE = 0.01
 ID_LENGTH = 15
@@ -65,15 +65,17 @@ def create_text_submission_form(service) -> None:
                 else autosummary_prompt
             )
             try:
-                completion: Completion = openai.Completion.create(
-                    engine=MODEL_ENGINE,
-                    prompt=prompt,
+                completion: Completion = openai.ChatCompletion.create(
+                    model=MODEL_ENGINE,
+                    messages=[{"role": "user", "content": prompt}],
                     n=1,
                     max_tokens=MAX_TOKENS,
                     temperature=TEMPERATURE,
                 )
                 saved_text = (
-                    completion.choices[0].text.replace("•", "* ").replace("-", "* ")
+                    completion.choices[0]
+                    .message.content.replace("• ", "* ")
+                    .replace("- ", "* ")
                 )
             except openai.error.InvalidRequestError as exception:
                 saved_text = exception.user_message
