@@ -1,6 +1,8 @@
+from typing import List, Dict, Tuple, Callable, Optional
+
 import streamlit as st
 from google.cloud import firestore
-from google.cloud.firestore_v1 import Client, CollectionReference
+from google.cloud.firestore_v1 import Client, CollectionReference, DocumentSnapshot
 from pathlib import Path
 from pages.pages_utils.search_bar import local_css, remote_css
 from fuzzywuzzy import fuzz
@@ -23,57 +25,80 @@ list_in_first_tab = sorted(
     [doc for doc in docs], key=lambda x: x.create_time, reverse=True
 )
 
+TextArea: str = "text_area"
+TextInput: str = "text_input"
+
+
+RENDER_MAPPER: Dict[str, Tuple[str, str, Callable]] = {
+    "My summary": ("MySummary", TextArea, lambda x: x),
+    "Auto-summary": (
+        "AutoSummary",
+        TextArea,
+        lambda x: x.replace("• ", "* ").replace("- ", "* "),
+    ),
+    "Name": ("Name", TextInput, lambda x: x),
+    "URL": ("URL", TextInput, lambda x: x),
+}
+
+
+def _view_and_edit_record(
+    record: DocumentSnapshot,
+    radio_button_edit_contents: str = """Edit: "{contents}"?""",
+    radio_button_render_name: str = """Edit {contents}""",
+):
+    with st.container():
+        edit = st.radio(
+            radio_button_edit_contents.format(contents=record.to_dict()["Name"]),
+            options=[True, False],
+            index=1,
+        )
+        if edit:
+            with st.form(
+                radio_button_render_name.format(contents=record.to_dict()["Name"])
+            ):
+                render_components: Dict[str, str] = {}
+                for rendered_name, db_field_and_render_fn in RENDER_MAPPER.items():
+                    render_components.update(
+                        {
+                            db_field_and_render_fn[0]: st.text_area(
+                                f"{rendered_name}: ",
+                                value=record.to_dict()[db_field_and_render_fn[0]],
+                            )
+                            if db_field_and_render_fn[1] == TextArea
+                            else st.text_input(
+                                f"{rendered_name}: ",
+                                value=record.to_dict()[db_field_and_render_fn[0]],
+                            )
+                        }
+                    )
+                submit_changes = st.form_submit_button("OK")
+                delete_records = st.form_submit_button("X")
+                if submit_changes:
+                    doc_ref.document(record.id).set(
+                        {
+                            **{
+                                db_field: input
+                                for db_field, input in render_components.items()
+                            }
+                        }
+                    )
+                if delete_records:
+                    doc_ref.document(record.id).delete()
+        else:
+            for rendered_name, db_field_and_render_fn in RENDER_MAPPER.items():
+                st.write(
+                    f"{rendered_name}: ",
+                    db_field_and_render_fn[2](
+                        record.to_dict()[db_field_and_render_fn[0]]
+                    ),
+                )
+
+
 with recent_tab:
     for l in list_in_first_tab:
         with st.expander(l.to_dict()["Name"]):
-            with st.container():
-                edit = st.radio(
-                    f"""Edit: "{l.to_dict()["Name"]}"?""",
-                    options=[True, False],
-                    index=1,
-                )
-                if edit:
-                    with st.form(f"""Edit {l.to_dict()["Name"]}"""):
-                        name = st.text_input(
-                            "Article name: ", value=l.to_dict()["Name"]
-                        )
-                        article_url = st.text_input(
-                            "Article url: ", value=l.to_dict()["URL"]
-                        )
-                        autosummary = st.text_area(
-                            "Auto-summary: ", l.to_dict().get("AutoSummary")
-                        )
-                        mysummary = st.text_area(
-                            "My summary: ", l.to_dict().get("MySummary")
-                        )
-                        submit_changes = st.form_submit_button("OK")
-                        if submit_changes:
-                            doc_ref.document(l.id).set(
-                                {
-                                    "Name": name,
-                                    "URL": article_url,
-                                    "AutoSummary": autosummary,
-                                    "MySummary": mysummary,
-                                }
-                            )
-                else:
-                    st.write("Article name: ", l.to_dict()["Name"])
-                    st.write("Article url: ", l.to_dict()["URL"])
-                    st.write(
-                        "Auto-summary:",
-                        f"""\n{l.to_dict().get("AutoSummary")}""".replace(
-                            "•", "* "
-                        ).replace("-", "* "),
-                    )
-                    st.write("My summary: ", l.to_dict().get("MySummary"))
+            _view_and_edit_record(l)
 
-
-mapper = {
-    "My summary": "MySummary",
-    "Auto-summary": "AutoSummary",
-    "Name": "Name",
-    "URL": "URL",
-}
 
 with search_tab:
     local_css(f"{Path(__file__).parent}/style.css")
@@ -94,12 +119,15 @@ with search_tab:
         result_docs_pruned = [
             r_doc
             for r_doc in result_docs
-            if fuzz.token_sort_ratio(r_doc.to_dict().get(mapper.get(option)), selection)
+            if fuzz.token_sort_ratio(
+                r_doc.to_dict().get(RENDER_MAPPER.get(option)[0]), selection
+            )
             > search_strictness
         ]
         for r in result_docs_pruned:
             with st.expander(r.to_dict().get("Name")):
-                st.write("Article name: ", r.to_dict()["Name"])
-                st.write("Article url: ", r.to_dict()["URL"])
-                st.write("Auto-summary: ", r.to_dict().get("AutoSummary"))
-                st.write("My summary: ", r.to_dict().get("MySummary"))
+                _view_and_edit_record(
+                    r,
+                    radio_button_edit_contents="""Edit retrieved {contents}?""",
+                    radio_button_render_name="""Edit retrieved {contents}""",
+                )
