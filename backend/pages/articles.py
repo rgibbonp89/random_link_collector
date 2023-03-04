@@ -1,23 +1,26 @@
+import asyncio
 import json
-from typing import Dict, Tuple, Callable, List
-from flask import Blueprint, request
+from typing import Dict, Tuple, Callable, List, Generator, Any
+from flask import Blueprint, request, Request
 import streamlit as st
 from google.cloud import firestore
 from google.cloud.firestore_v1 import (
     Client,
     CollectionReference,
-    DocumentReference,
     DocumentSnapshot,
 )
 from pathlib import Path
 from fuzzywuzzy import fuzz
-
+from backend.integrations.model_enpoint import call_model_endpoint
+from backend.integrations.async_db_write import add_async_components_to_db
 
 articles_blue = Blueprint("articlesblue", __name__)
 
 
 SEARCH_STRICTNESS_CONSTANT = 95
 SEARCH_STRICTNESS_KEY = "search_strictness"
+UPDATE_AUTO_SUMMARY_KEY = "update_auto_summary"
+DOCUMENT_NAME_KEY = "Name"
 
 db: Client = firestore.Client.from_service_account_json(
     f"{Path(__file__).parent.parent.parent}/.keys/firebase.json"
@@ -62,76 +65,71 @@ def _view_all_records() -> List[Dict[str, str]]:
     return output_list
 
 
-def edit_record(record):
-    # this will be the edit record flow
-    render_components: Dict[str, str] = {}
-    for rendered_name, db_field_and_render_fn in RENDER_MAPPER.items():
-        render_components.update(
-            {
-                db_field_and_render_fn[0]: st.text_area(
-                    f"{rendered_name}: ",
-                    value=record.to_dict()[db_field_and_render_fn[0]],
-                )
-                if db_field_and_render_fn[1]
-                else st.text_input(
-                    f"{rendered_name}: ",
-                    value=record.to_dict()[db_field_and_render_fn[0]],
-                )
-            }
-        )
-        submit_changes = st.form_submit_button("OK")
-        delete_records = st.form_submit_button("X")
-        if submit_changes:
-            doc_ref.document(record.id).set(
-                {**{db_field: input for db_field, input in render_components.items()}}
-            )
-        if delete_records:
-            doc_ref.document(record.id).delete()
-
-
-def search_records(search_strictness, option, selection):
-    for l in list_in_first_tab:
-        _view_record(l)
-        search_strictness = (
-            int(search_strictness)
-            if search_strictness is not None
-            else SEARCH_STRICTNESS_CONSTANT
-        )
-        result_docs = doc_ref.stream()
-        result_docs_pruned = [
-            r_doc
-            for r_doc in result_docs
-            if fuzz.token_sort_ratio(
-                r_doc.to_dict().get(RENDER_MAPPER.get(option)[0]), selection
-            )
-            > search_strictness
-        ]
-        for r in result_docs_pruned:
-            _view_record(r)
-
-
-@articles_blue.route("/getarticles", endpoint="getarticles", methods=["GET"])
-def get_articles():
-    return _view_all_records()
-
-
-@articles_blue.route("/updaterecord", endpoint="updaterecord", methods=["POST"])
-def update_article():
-    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
+def _match_record_and_find_id(request_obj: Request):
+    request_dict: Dict[str, str] = json.loads(request_obj.data.decode("utf-8"))
     search_strictness = int(
         request_dict.get(SEARCH_STRICTNESS_KEY, SEARCH_STRICTNESS_CONSTANT)
     )
-    result_docs = doc_ref.stream()
-    result_docs_pruned: List[DocumentSnapshot] = [
+    result_docs_pruned = _match_entries(request_dict, search_strictness)
+    number_results_found: int = len(result_docs_pruned)
+    assert number_results_found == 1
+    doc_id = result_docs_pruned[0].id
+    return doc_id, number_results_found, request_dict
+
+
+def _match_entries(request_dict, search_strictness):
+    result_docs: Generator[DocumentSnapshot, Any, None] = doc_ref.stream()
+    return [
         r_doc
         for r_doc in result_docs
-        if fuzz.token_sort_ratio(r_doc.to_dict().get("Name"), request_dict.get("Name"))
+        if fuzz.token_sort_ratio(
+            r_doc.to_dict().get(DOCUMENT_NAME_KEY), request_dict.get(DOCUMENT_NAME_KEY)
+        )
         > search_strictness
     ]
-    number_results_found = len(result_docs_pruned)
-    assert number_results_found <= 1
+
+
+@articles_blue.route("/getallarticles", endpoint="getallarticles", methods=["GET"])
+def get_all_articles():
+    return _view_all_records()
+
+
+@articles_blue.route("/getsinglearticle", endpoint="getsinglearticle", methods=["POST"])
+def get_single_article():
+    doc_id, _, _ = _match_record_and_find_id(request_obj=request)
+    return doc_ref.document(doc_id).get().to_dict()
+
+
+@articles_blue.route(
+    "/deletesinglearticle", endpoint="deletesinglearticle", methods=["POST"]
+)
+def delete_single_article():
+    doc_id, _, _ = _match_record_and_find_id(request_obj=request)
+    doc_ref.document(doc_id).delete()
+    return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
+
+
+@articles_blue.route("/updatearticle", endpoint="updatearticle", methods=["POST"])
+def update_article():
+    doc_id, number_results_found, request_dict = _match_record_and_find_id(
+        request_obj=request
+    )
+    if request_dict.get(UPDATE_AUTO_SUMMARY_KEY) == "true":
+        doc: Dict[str, str] = doc_ref.document(doc_id).get().to_dict()
+        cleaned_text, prompt = doc.get("CleanedText"), doc.get("Prompt")
+
+        saved_text: str = call_model_endpoint(prompt)
+        asyncio.run(
+            add_async_components_to_db(
+                db,
+                "articles",
+                doc_id,
+                saved_text,
+                cleaned_text=cleaned_text,
+            )
+        )
+        request_dict.pop(UPDATE_AUTO_SUMMARY_KEY, None)
     request_dict.pop(SEARCH_STRICTNESS_KEY, None)
-    doc_ref.document(result_docs_pruned[0].id).update(
-        request_dict
-    ) if number_results_found != 0 else print("No matches found")
+    ## I need to validate the keys that can be updated here
+    doc_ref.document(doc_id).update(request_dict)
     return json.dumps({"success": True}), 200, {"ContentType": "application/json"}

@@ -9,14 +9,14 @@ import string
 import random
 import openai
 from dotenv import load_dotenv
-from google.cloud.firestore_v1 import DocumentReference
 from google.cloud.firestore_v1.client import Client
-from openai import Completion
 from pathlib import Path
 from flask import request
 from backend.integrations.logins.news_login import (
     authenticate_news_site_and_return_cleaned_content,
 )
+from backend.integrations.model_enpoint import call_model_endpoint
+from backend.integrations.async_db_write import add_async_components_to_db
 
 load_dotenv()
 
@@ -29,9 +29,6 @@ openai.api_key = os.environ.get("OPENAI_KEY")
 
 
 # Set up the model and prompt
-MODEL_ENGINE = "gpt-3.5-turbo"
-MAX_TOKENS = 500
-TEMPERATURE = 0.01
 ID_LENGTH = 15
 ARTICLE_COLLECTION = "articles"
 
@@ -72,21 +69,7 @@ def create_text_submission_form(service) -> None:
         **request_dict,
     )
 
-    try:
-        completion: Completion = openai.ChatCompletion.create(
-            model=MODEL_ENGINE,
-            messages=[{"role": "user", "content": prompt}],
-            n=1,
-            max_tokens=MAX_TOKENS,
-            temperature=TEMPERATURE,
-        )
-        saved_text = (
-            completion.choices[0]
-            .message.content.replace("• ", "* ")
-            .replace("- ", "* ")
-        )
-    except openai.error.InvalidRequestError as exception:
-        saved_text = exception.user_message
+    saved_text = call_model_endpoint(prompt)
 
     asyncio.run(
         add_async_components_to_db(
@@ -118,22 +101,6 @@ def add_synchronous_components_to_db(
         }
     )
     return doc_id
-
-
-async def add_async_components_to_db(
-    db: Client,
-    collection_name: str,
-    doc_id: str,
-    chat_gpt_response: str,
-    cleaned_text: str,
-) -> None:
-    doc_ref: DocumentReference = db.collection(collection_name).document(doc_id)
-    doc_ref.update(
-        {
-            "AutoSummary": chat_gpt_response,
-            "CleanedText": cleaned_text,
-        }
-    )
 
 
 def create_doc_id() -> str:
