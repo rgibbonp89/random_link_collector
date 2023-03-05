@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
 import './App.css';
 import ReactMarkdown from 'react-markdown';
 import ReactPaginate from 'react-paginate';
@@ -8,8 +7,7 @@ import ReactPaginate from 'react-paginate';
 function App() {
   const [jsonData, setJsonData] = useState([]);
   const [page, setPage] = useState(0);
-  const [selectedBox, setSelectedBox] = useState(null);
-
+  const [minimizedBoxes, setMinimizedBoxes] = useState([]);
 
   useEffect(() => {
     // Make an HTTP request to the endpoint and get the JSON data
@@ -19,10 +17,13 @@ function App() {
       .catch(error => console.error(error));
   }, []);
 
-  const handleBoxClick = (boxId) => {
-    setSelectedBox(boxId === selectedBox ? null : boxId);
-  };
-
+  const handleBoxMinimize = (boxId) => {
+    if (!minimizedBoxes.includes(boxId)) {
+      setMinimizedBoxes([...minimizedBoxes, boxId]);
+    } else {
+      setMinimizedBoxes(minimizedBoxes.filter(id => id !== boxId));
+    }
+  }
 
   const itemsPerPage = 10;
   const pageCount = jsonData ? Math.ceil(jsonData.length / itemsPerPage) : 0;
@@ -31,15 +32,13 @@ function App() {
 
   const handlePageClick = (selectedPage) => {
     setPage(selectedPage.selected);
-    setSelectedBox(null);
   };
 
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
         <p>
-          Edit <code>src/App.js</code> and save to reload.
+          Welcome to the article saver!
         </p>
         <a
           className="App-link"
@@ -50,13 +49,23 @@ function App() {
           Learn React
         </a>
         {currentPageData.map(item => (
-          <div key={item.name_input} className={`box ${item.name_input === selectedBox ? 'box--selected' : ''}`} onClick={() => handleBoxClick(item.name_input)}>
-            <h2>Article name: {item.name_input}</h2>
-            <p>URL: {item.url_input}</p>
-            <p className="subheader"> Description:</p>
-            <ReactMarkdown>{item.auto_summary}</ReactMarkdown>
-            <p className="subheader"> My summary:</p>
-            <ReactMarkdown>{item.my_summary}</ReactMarkdown>
+          <div key={item.name_input}
+               className={`box
+               ${minimizedBoxes.includes(item.name_input) ? 'box--minimized' : ''}`}
+          >
+           <a
+               href={item.url_input}>
+              <h2>{item.name_input}</h2>
+            </a>
+            <button onClick={() => handleBoxMinimize(item.name_input)}>Expand</button>
+            {!minimizedBoxes.includes(item.name_input) &&
+              <>
+                <p className="subheader"> Description:</p>
+                <ReactMarkdown>{item.auto_summary}</ReactMarkdown>
+                <p className="subheader"> My summary:</p>
+                <ReactMarkdown>{item.my_summary}</ReactMarkdown>
+              </>
+            }
           </div>
         ))}
         <ReactPaginate
