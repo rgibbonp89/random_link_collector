@@ -2,7 +2,6 @@ import asyncio
 import json
 from typing import Dict, Tuple, Callable, List, Generator, Any
 from flask import Blueprint, request, Request
-import streamlit as st
 from google.cloud import firestore
 from google.cloud.firestore_v1 import (
     Client,
@@ -12,7 +11,17 @@ from google.cloud.firestore_v1 import (
 from pathlib import Path
 from fuzzywuzzy import fuzz
 from backend.integrations.model_enpoint import call_model_endpoint
-from backend.integrations.async_db_write import add_async_components_to_db
+from backend.integrations.utils.utils import (
+    add_async_components_to_db,
+    add_synchronous_components_to_db,
+    _validate_request_for_update_article,
+    _validate_request_for_update_article_sync_db,
+    MY_SUMMARY_KEY,
+    AUTOSUMMARY_KEY,
+    NAME_INPUT_KEY,
+    URL_INPUT_KEY,
+    AUTOSUMMARY_PROMPT_KEY,
+)
 
 articles_blue = Blueprint("articlesblue", __name__)
 
@@ -21,11 +30,12 @@ SEARCH_STRICTNESS_CONSTANT = 95
 SEARCH_STRICTNESS_KEY = "search_strictness"
 UPDATE_AUTO_SUMMARY_KEY = "update_auto_summary"
 DOCUMENT_NAME_KEY = "Name"
+COLLECTION_NAME = "articles"
 
 db: Client = firestore.Client.from_service_account_json(
     f"{Path(__file__).parent.parent.parent}/.keys/firebase.json"
 )
-doc_ref: CollectionReference = db.collection("articles")
+doc_ref: CollectionReference = db.collection(COLLECTION_NAME)
 
 docs = doc_ref.stream()
 
@@ -35,23 +45,24 @@ list_in_first_tab = sorted(
 
 
 RENDER_MAPPER: Dict[str, Tuple[str, Callable]] = {
-    "My summary": ("MySummary", lambda x: x),
-    "Auto-summary": (
+    MY_SUMMARY_KEY: ("MySummary", lambda x: x),
+    AUTOSUMMARY_KEY: (
         "AutoSummary",
         lambda x: x.replace("• ", "* ").replace("- ", "* "),
     ),
-    "Name": ("Name", lambda x: x),
-    "URL": ("URL", lambda x: x),
+    NAME_INPUT_KEY: ("Name", lambda x: x),
+    URL_INPUT_KEY: ("URL", lambda x: x),
 }
 
 
-def _view_record(record):
+def _view_record(record: DocumentSnapshot) -> Dict[str, str]:
     out = {}
+    dict_record = record.to_dict()
     for rendered_name, db_field_and_render_fn in RENDER_MAPPER.items():
         out.update(
             {
                 f"{rendered_name}": db_field_and_render_fn[1](
-                    record.to_dict()[db_field_and_render_fn[0]]
+                    dict_record[db_field_and_render_fn[0]]
                 ),
             }
         )
@@ -83,7 +94,8 @@ def _match_entries(request_dict, search_strictness):
         r_doc
         for r_doc in result_docs
         if fuzz.token_sort_ratio(
-            r_doc.to_dict().get(DOCUMENT_NAME_KEY), request_dict.get(DOCUMENT_NAME_KEY)
+            r_doc.to_dict().get(RENDER_MAPPER.get(NAME_INPUT_KEY)[0]),
+            request_dict.get(NAME_INPUT_KEY),
         )
         > search_strictness
     ]
@@ -97,7 +109,7 @@ def get_all_articles():
 @articles_blue.route("/getsinglearticle", endpoint="getsinglearticle", methods=["POST"])
 def get_single_article():
     doc_id, _, _ = _match_record_and_find_id(request_obj=request)
-    return doc_ref.document(doc_id).get().to_dict()
+    return _view_record(doc_ref.document(doc_id).get())
 
 
 @articles_blue.route(
@@ -114,22 +126,25 @@ def update_article():
     doc_id, number_results_found, request_dict = _match_record_and_find_id(
         request_obj=request
     )
-    if request_dict.get(UPDATE_AUTO_SUMMARY_KEY) == "true":
-        doc: Dict[str, str] = doc_ref.document(doc_id).get().to_dict()
-        cleaned_text, prompt = doc.get("CleanedText"), doc.get("Prompt")
+    _validate_request_for_update_article(request=request_dict)
+    request_dict.update({"doc_id": doc_id})
+    doc: Dict[str, str] = doc_ref.document(doc_id).get().to_dict()
 
-        saved_text: str = call_model_endpoint(prompt)
+    if request_dict.get(UPDATE_AUTO_SUMMARY_KEY) == "true":
+        cleaned_text, prompt = doc.get("CleanedText"), doc.get("Prompt")
+        model_response_text: str = call_model_endpoint(prompt)
         asyncio.run(
             add_async_components_to_db(
                 db,
-                "articles",
+                COLLECTION_NAME,
                 doc_id,
-                saved_text,
+                model_response_text,
                 cleaned_text=cleaned_text,
             )
         )
-        request_dict.pop(UPDATE_AUTO_SUMMARY_KEY, None)
+    request_dict.pop(UPDATE_AUTO_SUMMARY_KEY, None)
     request_dict.pop(SEARCH_STRICTNESS_KEY, None)
-    ## I need to validate the keys that can be updated here
-    doc_ref.document(doc_id).update(request_dict)
+    request_dict.update({URL_INPUT_KEY: doc.get("URL"), AUTOSUMMARY_PROMPT_KEY: prompt})
+    _validate_request_for_update_article_sync_db(request=request_dict)
+    add_synchronous_components_to_db(db, COLLECTION_NAME, **request_dict)
     return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
