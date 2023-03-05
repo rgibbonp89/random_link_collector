@@ -2,6 +2,7 @@ import asyncio
 import json
 from typing import Dict, Tuple, Callable, List, Generator, Any
 from flask import Blueprint, request, Request
+from flask_cors import CORS
 from google.cloud import firestore
 from google.cloud.firestore_v1 import (
     Client,
@@ -24,7 +25,7 @@ from backend.integrations.utils.utils import (
 )
 
 articles_blue = Blueprint("articlesblue", __name__)
-
+CORS(articles_blue)
 
 SEARCH_STRICTNESS_CONSTANT = 95
 SEARCH_STRICTNESS_KEY = "search_strictness"
@@ -129,9 +130,8 @@ def update_article():
     _validate_request_for_update_article(request=request_dict)
     request_dict.update({"doc_id": doc_id})
     doc: Dict[str, str] = doc_ref.document(doc_id).get().to_dict()
-
+    cleaned_text, prompt = doc.get("CleanedText"), doc.get("Prompt")
     if request_dict.get(UPDATE_AUTO_SUMMARY_KEY) == "true":
-        cleaned_text, prompt = doc.get("CleanedText"), doc.get("Prompt")
         model_response_text: str = call_model_endpoint(prompt)
         asyncio.run(
             add_async_components_to_db(

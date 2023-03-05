@@ -22,6 +22,8 @@ async-openai = "*"
 python-dotenv = "*"
 fuzzywuzzy = "*"
 mail = "*"
+waitress = "*"
+flask-cors = "*"
 
 [dev-packages]
 black = "*"
