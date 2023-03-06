@@ -4,11 +4,12 @@ import ReactMarkdown from 'react-markdown';
 import ReactPaginate from 'react-paginate';
 
 
+
 function App() {
   const [jsonData, setJsonData] = useState([]);
   const [page, setPage] = useState(0);
   const [minimizedBoxes, setMinimizedBoxes] = useState([]);
-
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     // Make an HTTP request to the endpoint and get the JSON data
@@ -39,8 +40,13 @@ function App() {
     setPage(selectedPage.selected);
   };
 
+  const handleMenuToggle = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
   return (
     <div className="App">
+
       <header className="App-header">
         <p>
           Welcome to the article saver!

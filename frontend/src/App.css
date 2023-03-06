@@ -23,7 +23,7 @@
   justify-content: center;
   font-size: calc(10px + 2vmin);
   color: white;
-  overflow: auto; /* Add this rule to enable vertical scrolling */
+  overflow: auto;
   min-width: 50%;
 }
 
@@ -153,4 +153,45 @@
     width: 90%;
     margin: 0 5%;
   }
+}
+
+.menu-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.menu-bar {
+  width: 20px;
+  height: 3px;
+  background-color: #000;
+  margin-bottom: 3px;
+}
+
+.menu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 200px;
+  background-color: #fff;
+  border: 1px solid #000;
+  display: none;
+}
+
+.menu li {
+  list-style: none;
+}
+
+.menu a {
+  display: block;
+  padding: 10px;
+  color: #000;
+  text-decoration: none;
+}
+
+.menu a:hover {
+  background-color: #000;
+  color: #fff;
 }
