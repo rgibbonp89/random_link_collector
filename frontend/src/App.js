@@ -45,14 +45,7 @@ function App() {
         <p>
           Welcome to the article saver!
         </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+      </header>
         <header className="App"></header>
         {currentPageData.map(item => (
           <div key={item.name_input}
@@ -88,7 +81,6 @@ function App() {
           pageLinkStyle={{ listStyleType: 'none' }}
 
         />
-      </header>
     </div>
   );
 }
