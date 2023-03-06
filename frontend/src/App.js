@@ -56,10 +56,11 @@ function App() {
                href={item.url_input}>
               <h2>{item.name_input}</h2>
             </a>
-            <button onClick={() => handleBoxMinimize(item.name_input)}>Expand</button>
+            <button className={'button'} onClick={() => handleBoxMinimize(item.name_input)}
+            >Expand</button>
             {!minimizedBoxes.includes(item.name_input) &&
               <>
-                <p className="subheader"> Description:</p>
+                <p className="subheader"> Auto-summary:</p>
                 <ReactMarkdown>{item.auto_summary}</ReactMarkdown>
                 <p className="subheader"> My summary:</p>
                 <ReactMarkdown>{item.my_summary}</ReactMarkdown>

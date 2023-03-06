@@ -49,7 +49,9 @@ RENDER_MAPPER: Dict[str, Tuple[str, Callable]] = {
     MY_SUMMARY_KEY: ("MySummary", lambda x: x),
     AUTOSUMMARY_KEY: (
         "AutoSummary",
-        lambda x: x.replace("• ", "* ").replace("- ", "* "),
+        lambda x: x.replace("• ", "* ")
+        .replace("- ", "* ")
+        .replace("Main arguments:", ""),
     ),
     NAME_INPUT_KEY: ("Name", lambda x: x),
     URL_INPUT_KEY: ("URL", lambda x: x),
