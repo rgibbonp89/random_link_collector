@@ -52,14 +52,17 @@ def _submit_article(service) -> None:
         **request_dict,
     )
 
-    saved_text = call_model_endpoint(prompt)
+    model_response_text = call_model_endpoint(prompt)
+    one_liner_prompt = f"Can you summarize this in one line: {model_response_text}?"
+    one_liner = call_model_endpoint(one_liner_prompt)
 
     asyncio.run(
         add_async_components_to_db(
             db,
             "articles",
             doc_id,
-            saved_text,
+            model_response_text,
             cleaned_text=formatted_text,
+            one_liner=one_liner,
         )
     )

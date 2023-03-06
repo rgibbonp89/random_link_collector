@@ -22,6 +22,7 @@ from backend.integrations.utils.utils import (
     NAME_INPUT_KEY,
     URL_INPUT_KEY,
     AUTOSUMMARY_PROMPT_KEY,
+    SHORT_SUMMARY_KEY,
 )
 
 articles_blue = Blueprint("articlesblue", __name__)
@@ -55,6 +56,7 @@ RENDER_MAPPER: Dict[str, Tuple[str, Callable]] = {
     ),
     NAME_INPUT_KEY: ("Name", lambda x: x),
     URL_INPUT_KEY: ("URL", lambda x: x),
+    SHORT_SUMMARY_KEY: ("ShortSummary", lambda x: x),
 }
 
 
@@ -65,7 +67,7 @@ def _view_record(record: DocumentSnapshot) -> Dict[str, str]:
         out.update(
             {
                 f"{rendered_name}": db_field_and_render_fn[1](
-                    dict_record[db_field_and_render_fn[0]]
+                    dict_record.get(db_field_and_render_fn[0], "")
                 ),
             }
         )
@@ -135,6 +137,10 @@ def update_article():
     cleaned_text, prompt = doc.get("CleanedText"), doc.get("Prompt")
     if request_dict.get(UPDATE_AUTO_SUMMARY_KEY) == "true":
         model_response_text: str = call_model_endpoint(prompt)
+        one_liner_prompt = (
+            f"Can you summarize this in one sentence: {model_response_text}?"
+        )
+        one_liner = call_model_endpoint(one_liner_prompt)
         asyncio.run(
             add_async_components_to_db(
                 db,
@@ -142,6 +148,7 @@ def update_article():
                 doc_id,
                 model_response_text,
                 cleaned_text=cleaned_text,
+                one_liner=one_liner,
             )
         )
     request_dict.pop(UPDATE_AUTO_SUMMARY_KEY, None)

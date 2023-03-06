@@ -5,7 +5,7 @@ import ReactPaginate from 'react-paginate';
 
 
 
-function App() {
+function Home() {
   const [jsonData, setJsonData] = useState([]);
   const [page, setPage] = useState(0);
   const [minimizedBoxes, setMinimizedBoxes] = useState([]);
@@ -53,6 +53,7 @@ function App() {
         </p>
       </header>
         <header className="App"></header>
+
         {currentPageData.map(item => (
           <div key={item.name_input}
                className={`box
@@ -62,6 +63,7 @@ function App() {
                href={item.url_input}>
               <h2>{item.name_input}</h2>
             </a>
+            <p>Short summary: {item.short_summary}</p>
             <button className={'button'} onClick={() => handleBoxMinimize(item.name_input)}
             >Expand</button>
             {!minimizedBoxes.includes(item.name_input) &&
@@ -92,4 +94,4 @@ function App() {
   );
 }
 
-export default App;
+export default Home;

@@ -11,6 +11,7 @@ URL_INPUT_KEY = "url_input"
 MY_SUMMARY_KEY = "my_summary"
 AUTOSUMMARY_PROMPT_KEY = "prompt"
 AUTOSUMMARY_KEY = "auto_summary"
+SHORT_SUMMARY_KEY = "short_summary"
 
 expected_keys_initial_submission: List[str] = [
     NAME_INPUT_KEY,
@@ -32,7 +33,11 @@ def _validate_request_contents(
     request: Dict[str, str], request_expected_keys: List[str]
 ):
     missing_keys = set(set(request_expected_keys) - set(list(request.keys())))
-    assert missing_keys == set()
+    try:
+        assert missing_keys == set()
+    except AssertionError:
+        print(f"Missing {missing_keys}")
+        exit(1)
 
 
 _validate_request_for_initial_submission = partial(
@@ -93,11 +98,13 @@ async def add_async_components_to_db(
     doc_id: str,
     chat_gpt_response: str,
     cleaned_text: str,
+    one_liner: str,
 ) -> None:
     doc_ref: DocumentReference = db.collection(collection_name).document(doc_id)
     doc_ref.update(
         {
             "AutoSummary": chat_gpt_response,
             "CleanedText": cleaned_text,
+            "ShortSummary": one_liner,
         }
     )
