@@ -2,6 +2,8 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  min-width: 100vh;
+  margin-outside: 1vh;
 }
 /*
 .App-logo {
@@ -15,6 +17,12 @@
   }
 }
 */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 .App-header {
   background-color: #282c34;
   min-height: 100vh;
@@ -24,28 +32,43 @@
   justify-content: center;
   font-size: calc(10px + 2vmin);
   color: white;
+  overflow: auto; /* Add this rule to enable vertical scrolling */
+  min-width: 95%;
 }
-/*
-.App-link {
-  color: #61dafb;
-}*/
-/*
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}*/
 
 .box {
+  position: relative;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  padding: 10px;
+  font-size: 14px;
+  text-align: left;
+  width: 95%;
+  margin: 10px;
+
+}
+
+.box .content {
+  display: flex;
+  position: relative;
+  top: 50px;
+  left: 0;
+  height: 200px;
+  background-color: #ccc;
+  width: fit-content;
+}
+
+.box.expanded .content {
+  display: block;
+  width: fit-content;
+}
+
+.box--minimized {
   border: 1px solid rgba(0, 0, 0, 0.24);
   margin: 10px;
   padding: 10px;
   font-size: 14px;
   text-align: left;
-  width: 90%;
+  width: 95%;
 }
 
 .subheader {
@@ -100,4 +123,19 @@
   background-color: #007bff;
   color: white;
   border-color: #007bff;
+}
+
+/* styles for smaller screens */
+@media (max-width: 768px) {
+  .box {
+    width: 90%;
+    margin: 0 2.5%;
+  }
+}
+
+@media (max-width: 480px) {
+  .box {
+    width: 90%;
+    margin: 0 5%;
+  }
 }

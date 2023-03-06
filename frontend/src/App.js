@@ -9,13 +9,18 @@ function App() {
   const [page, setPage] = useState(0);
   const [minimizedBoxes, setMinimizedBoxes] = useState([]);
 
+
   useEffect(() => {
     // Make an HTTP request to the endpoint and get the JSON data
     fetch('http://127.0.0.1:5000/getallarticles')
       .then(response => response.json())
-      .then(data => setJsonData(data))
+      .then(data => {
+        setJsonData(data);
+        setMinimizedBoxes(data.map(item => item.name_input));
+      })
       .catch(error => console.error(error));
   }, []);
+
 
   const handleBoxMinimize = (boxId) => {
     if (!minimizedBoxes.includes(boxId)) {
@@ -48,6 +53,7 @@ function App() {
         >
           Learn React
         </a>
+        <header className="App"></header>
         {currentPageData.map(item => (
           <div key={item.name_input}
                className={`box
