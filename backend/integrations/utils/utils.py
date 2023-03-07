@@ -12,11 +12,13 @@ MY_SUMMARY_KEY = "my_summary"
 AUTOSUMMARY_PROMPT_KEY = "prompt"
 AUTOSUMMARY_KEY = "auto_summary"
 SHORT_SUMMARY_KEY = "short_summary"
+MAX_TOKENS_KEY = "max_tokens"
 
 expected_keys_initial_submission: List[str] = [
     NAME_INPUT_KEY,
     URL_INPUT_KEY,
     MY_SUMMARY_KEY,
+    MAX_TOKENS_KEY,
 ]
 expected_keys_edit_article: List[str] = [
     NAME_INPUT_KEY,
@@ -59,6 +61,7 @@ def add_synchronous_components_to_db(
     my_summary: str,
     prompt: str,
     doc_id: Optional[str] = None,
+    **extra_items,
 ) -> str:
     reference_exists = True if doc_id else False
     if not reference_exists:
@@ -71,6 +74,7 @@ def add_synchronous_components_to_db(
                 "URL": url_input,
                 "MySummary": my_summary,
                 "Prompt": prompt,
+                **extra_items,
             }
         )
     else:
@@ -80,6 +84,7 @@ def add_synchronous_components_to_db(
                 "URL": url_input,
                 "MySummary": my_summary,
                 "Prompt": prompt,
+                **extra_items,
             }
         )
     return doc_id

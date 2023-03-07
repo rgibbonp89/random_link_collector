@@ -8,6 +8,7 @@ function Submit() {
       name_input: 'Missing name!',
       url_input: '',
       my_summary: null,
+      max_tokens: 500,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -64,6 +65,10 @@ function Submit() {
         My summary:
         <textarea className={'textarea'}  type="text" name="my_summary" onChange={handleInputChange} />
       </label >
+      <label className={'label'}>
+        Max tokens:
+        <input className={'input'} type="text" name="max_tokens" onChange={handleInputChange} />
+      </label>
       <button className={'button'} type="submit">Submit</button>
     </form>
           </header>

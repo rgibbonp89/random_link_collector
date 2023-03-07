@@ -52,9 +52,13 @@ def _submit_article(service) -> None:
         **request_dict,
     )
 
-    model_response_text = call_model_endpoint(prompt)
+    model_response_text = call_model_endpoint(
+        prompt, max_tokens=int(request_dict.get("max_tokens", 500))
+    )
     one_liner_prompt = f"Can you summarize this in one line: {model_response_text}?"
-    one_liner = call_model_endpoint(one_liner_prompt)
+    one_liner = call_model_endpoint(
+        one_liner_prompt, max_tokens=int(request_dict.get("max_tokens", 500))
+    )
 
     asyncio.run(
         add_async_components_to_db(
