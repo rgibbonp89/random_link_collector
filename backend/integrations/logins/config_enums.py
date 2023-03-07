@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Type, Union
-from integrations.logins.login_configs.base_login_config import SiteConfig
-from integrations.logins.login_configs.news_login_configs import (
+from backend.integrations.logins.login_configs.base_login_config import SiteConfig
+from backend.integrations.logins.login_configs.news_login_configs import (
     FTLoginConfig,
     SubstackLoginConfig,
     ForeignAffairsLoginConfig,

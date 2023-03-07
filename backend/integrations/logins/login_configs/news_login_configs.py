@@ -9,9 +9,9 @@ from googleapiclient.discovery import Resource
 from readability import Document
 from requests import Session
 
-from .base_login_config import SiteConfig
-from integrations.logins.login_configs.parse_mail import get_message_content
-from integrations.logins.login_configs.utils import (
+from backend.integrations.logins.login_configs.base_login_config import SiteConfig
+from backend.integrations.logins.login_configs.parse_mail import get_message_content
+from backend.integrations.logins.login_configs.utils import (
     _save_sessions_cookies_to_db,
     SESSION_COOKIES_KEY,
 )

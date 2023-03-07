@@ -1,23 +1,22 @@
-#Base Image to use
-FROM python:3.8.16
+FROM node:16-alpine as build-step
+WORKDIR /app
+ENV PATH /app/node_modules/.bin:$PATH
+COPY ./frontend/package.json yarn.lock ./
+COPY ./frontend/src ./src
+COPY ./frontend/public ./public
+RUN yarn install
+RUN yarn build
 
-#Expose port 8080
+
+# Build step #2: build the API with the client as static files
+FROM python:3.8.16
+COPY --from=build-step /app/build app/backend/build
+COPY requirements.txt .env app/
+COPY .keys/ app/.keys
+COPY backend/ app/backend
+WORKDIR /app
+RUN pip install -r requirements.txt
+
 EXPOSE 8080
 
-#Optional - install git to fetch packages directly from github
-RUN apt-get update && apt-get install -y git
-
-#Copy Requirements.txt file into app directory
-COPY requirements.txt random_link_collector/requirements.txt
-
-#install all requirements in requirements.txt
-RUN pip install -r random_link_collector/requirements.txt
-
-#Copy all files in current directory into app directory
-COPY . /random_link_collector
-
-#Change Working Directory to app directory
-WORKDIR /random_link_collector
-
-#Run the application on port 8080
-ENTRYPOINT ["streamlit", "run", "app/Submit.py", "--server.port=8080", "--server.address=0.0.0.0"]
+CMD ["gunicorn", "-b", ":8080", "backend.app:app"]

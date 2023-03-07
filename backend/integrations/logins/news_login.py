@@ -8,9 +8,11 @@ import requests
 from googleapiclient.discovery import Resource
 from readability import Document
 
-from integrations.logins.config_enums import parse_article_url_for_correct_login_flow
-from integrations.logins.login_configs.base_login_config import SiteConfig
-from integrations.logins.login_configs.utils import (
+from backend.integrations.logins.config_enums import (
+    parse_article_url_for_correct_login_flow,
+)
+from backend.integrations.logins.login_configs.base_login_config import SiteConfig
+from backend.integrations.logins.login_configs.utils import (
     _search_sessions_db_for_cookies,
     SESSION_COOKIES_KEY,
     doc_ref,
