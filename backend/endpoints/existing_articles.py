@@ -45,10 +45,6 @@ def _make_db_connection():
     return db, doc_ref, docs, list_in_first_tab
 
 
-list_in_first_tab = sorted(
-    [doc for doc in docs], key=lambda x: x.create_time, reverse=True
-)
-
 RENDER_MAPPER: Dict[str, Tuple[str, Callable]] = {
     MY_SUMMARY_KEY: ("MySummary", lambda x: x),
     AUTOSUMMARY_KEY: (
