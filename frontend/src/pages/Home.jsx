@@ -12,8 +12,9 @@ function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
+    const queryParams = `?timestamp=${new Date().getTime()}`;
     // Make an HTTP request to the endpoint and get the JSON data
-    fetch('/getallarticles')
+    fetch(`/getallarticles${queryParams}`)
       .then(response => response.json())
       .then(data => {
         setJsonData(data);
