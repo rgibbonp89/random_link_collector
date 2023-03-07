@@ -43,8 +43,8 @@ run:
 	pipenv run streamlit run app/Submit.py
 
 dockerr:
-	docker build . -t streamlit-app
-	docker run -p 8080:8080 streamlit-app
+	docker build -f Dockerfile -t react-flask-app-combo .
+	docker run --rm -p 8080:8080 react-flask-app-combo
 
 deploy:
 	gcloud app deploy app.yaml

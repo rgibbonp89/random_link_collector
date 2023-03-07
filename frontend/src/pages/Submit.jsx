@@ -9,6 +9,9 @@ function Submit() {
       url_input: '',
       my_summary: null,
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -19,6 +22,7 @@ function Submit() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    setIsLoading(true);
     fetch('/submit', {
       method: 'POST',
       headers: {
@@ -27,6 +31,10 @@ function Submit() {
       body: JSON.stringify(formData),
     })
       .then((response) => response.json())
+      .then(() => {
+        setIsLoading(false);
+        setIsSubmitted(true);
+      })
       .then((data) => {
         console.log('Success:', data);
         // do something with the response data
@@ -40,6 +48,9 @@ function Submit() {
   return (
       <div className="app">
         <header className="box">
+        <h2>Add an article</h2>
+      {isLoading && <p>Loading...</p>}
+      {isSubmitted && <p>Article submitted successfully!</p>}
     <form className={'form'} onSubmit={handleSubmit}>
       <label className={'label'}>
         Name:
