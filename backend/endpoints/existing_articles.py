@@ -5,8 +5,6 @@ from flask import Blueprint, request, Request
 from flask_cors import CORS
 from google.cloud import firestore
 from google.cloud.firestore_v1 import (
-    Client,
-    CollectionReference,
     DocumentSnapshot,
 )
 from pathlib import Path
@@ -34,17 +32,22 @@ UPDATE_AUTO_SUMMARY_KEY = "update_auto_summary"
 DOCUMENT_NAME_KEY = "Name"
 COLLECTION_NAME = "articles"
 
-db: Client = firestore.Client.from_service_account_json(
-    f"{Path(__file__).parent.parent.parent}/.keys/firebase.json"
-)
-doc_ref: CollectionReference = db.collection(COLLECTION_NAME)
 
-docs = doc_ref.stream()
+def _make_db_connection():
+    db = firestore.Client.from_service_account_json(
+        f"{Path(__file__).parent.parent.parent}/.keys/firebase.json"
+    )
+    doc_ref = db.collection(COLLECTION_NAME)
+    docs = doc_ref.stream()
+    list_in_first_tab = sorted(
+        [doc for doc in docs], key=lambda x: x.create_time, reverse=True
+    )
+    return db, doc_ref, docs, list_in_first_tab
+
 
 list_in_first_tab = sorted(
     [doc for doc in docs], key=lambda x: x.create_time, reverse=True
 )
-
 
 RENDER_MAPPER: Dict[str, Tuple[str, Callable]] = {
     MY_SUMMARY_KEY: ("MySummary", lambda x: x),
@@ -76,6 +79,7 @@ def _view_record(record: DocumentSnapshot) -> Dict[str, str]:
 
 def _view_all_records() -> List[Dict[str, str]]:
     output_list = list()
+    _, _, _, list_in_first_tab = _make_db_connection()
     for record in list_in_first_tab:
         output_list.append(_view_record(record))
     return output_list
@@ -94,6 +98,7 @@ def _match_record_and_find_id(request_obj: Request):
 
 
 def _match_entries(request_dict, search_strictness):
+    db, doc_ref, docs, list_in_first_tab = _make_db_connection()
     result_docs: Generator[DocumentSnapshot, Any, None] = doc_ref.stream()
     return [
         r_doc
@@ -113,6 +118,7 @@ def get_all_articles():
 
 @articles_blue.route("/getsinglearticle", endpoint="getsinglearticle", methods=["POST"])
 def get_single_article():
+    _, doc_ref, _, _ = _make_db_connection()
     doc_id, _, _ = _match_record_and_find_id(request_obj=request)
     return _view_record(doc_ref.document(doc_id).get())
 
@@ -121,6 +127,7 @@ def get_single_article():
     "/deletesinglearticle", endpoint="deletesinglearticle", methods=["POST"]
 )
 def delete_single_article():
+    _, doc_ref, _, _ = _make_db_connection()
     doc_id, _, _ = _match_record_and_find_id(request_obj=request)
     doc_ref.document(doc_id).delete()
     return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
@@ -128,6 +135,8 @@ def delete_single_article():
 
 @articles_blue.route("/updatearticle", endpoint="updatearticle", methods=["POST"])
 def update_article():
+    db, doc_ref, _, _ = _make_db_connection()
+
     doc_id, number_results_found, request_dict = _match_record_and_find_id(
         request_obj=request
     )
