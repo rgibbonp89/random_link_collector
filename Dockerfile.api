@@ -19,5 +19,6 @@ COPY . /random_link_collector
 #Change Working Directory to app directory
 WORKDIR /random_link_collector
 
-#Run the application on port 8080
-ENTRYPOINT ["streamlit", "run", "app/Submit.py", "--server.port=8080", "--server.address=0.0.0.0"]
+EXPOSE 8080
+
+CMD ["gunicorn", "-b", ":8080", "backend.app:app"]
