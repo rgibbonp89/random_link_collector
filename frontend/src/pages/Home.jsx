@@ -13,7 +13,7 @@ function Home() {
 
   useEffect(() => {
     // Make an HTTP request to the endpoint and get the JSON data
-    fetch('http://127.0.0.1:5000/getallarticles')
+    fetch('/getallarticles')
       .then(response => response.json())
       .then(data => {
         setJsonData(data);
