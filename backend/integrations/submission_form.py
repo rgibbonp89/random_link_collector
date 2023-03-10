@@ -18,6 +18,8 @@ from backend.integrations.utils.utils import (
     AUTOSUMMARY_PROMPT_KEY,
     _validate_request_for_initial_submission,
     SITE_LABEL_KEY,
+    RENDER_MAPPER,
+    READ_STATUS_KEY,
 )
 from backend.integrations.utils.utils import (
     add_synchronous_components_to_db,
@@ -46,15 +48,24 @@ def _submit_article(service) -> None:
         if not request_dict.get(AUTOSUMMARY_PROMPT_KEY)
         else request_dict.get(AUTOSUMMARY_PROMPT_KEY)
     )
+
+    # clean this up and make it generic (update_request fn)
     request_dict.update({AUTOSUMMARY_PROMPT_KEY: prompt})
     request_dict.update(
-        {SITE_LABEL_KEY: urlparse(request_dict.get(URL_INPUT_KEY)).netloc}
+        {
+            SITE_LABEL_KEY: urlparse(request_dict.get(URL_INPUT_KEY)).netloc,
+            READ_STATUS_KEY: "not_read",
+        }
     )
+
+    db_insert_dict = {
+        RENDER_MAPPER.get(key)[0]: value for key, value in request_dict.items()
+    }
 
     doc_id = add_synchronous_components_to_db(
         db=db,
         collection_name=ARTICLE_COLLECTION,
-        **request_dict,
+        db_insert_dict=db_insert_dict,
     )
 
     model_response_text = call_model_endpoint(prompt)

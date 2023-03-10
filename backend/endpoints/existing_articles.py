@@ -1,10 +1,11 @@
 import asyncio
 import json
-from typing import Dict, Tuple, Callable, List, Generator, Any
+from typing import Dict, List, Generator, Any
 from flask import Blueprint, request, Request
 from flask_cors import CORS
 from google.cloud.firestore_v1 import (
     DocumentSnapshot,
+    DocumentReference,
 )
 from fuzzywuzzy import fuzz
 from backend.integrations.model_enpoint import call_model_endpoint
@@ -13,16 +14,13 @@ from backend.integrations.utils.utils import (
     add_synchronous_components_to_db,
     _validate_request_for_update_article,
     _validate_request_for_update_article_sync_db,
-    MY_SUMMARY_KEY,
-    AUTOSUMMARY_KEY,
     NAME_INPUT_KEY,
     URL_INPUT_KEY,
     AUTOSUMMARY_PROMPT_KEY,
-    SHORT_SUMMARY_KEY,
     COLLECTION_NAME,
-    SITE_LABEL_KEY,
     _make_db_connection,
 )
+from backend.integrations.utils.utils import RENDER_MAPPER
 
 articles_blue = Blueprint("articlesblue", __name__)
 CORS(articles_blue)
@@ -31,20 +29,6 @@ SEARCH_STRICTNESS_CONSTANT = 95
 SEARCH_STRICTNESS_KEY = "search_strictness"
 UPDATE_AUTO_SUMMARY_KEY = "update_auto_summary"
 DOCUMENT_NAME_KEY = "Name"
-
-RENDER_MAPPER: Dict[str, Tuple[str, Callable]] = {
-    MY_SUMMARY_KEY: ("MySummary", lambda x: x),
-    AUTOSUMMARY_KEY: (
-        "AutoSummary",
-        lambda x: x.replace("• ", "* ")
-        .replace("- ", "* ")
-        .replace("Main arguments:", ""),
-    ),
-    NAME_INPUT_KEY: ("Name", lambda x: x),
-    URL_INPUT_KEY: ("URL", lambda x: x),
-    SHORT_SUMMARY_KEY: ("ShortSummary", lambda x: x),
-    SITE_LABEL_KEY: ("SiteLabel", lambda x: x),
-}
 
 
 def _view_record(record: DocumentSnapshot) -> Dict[str, str]:
@@ -56,7 +40,8 @@ def _view_record(record: DocumentSnapshot) -> Dict[str, str]:
                 f"{rendered_name}": db_field_and_render_fn[1](
                     dict_record.get(db_field_and_render_fn[0], "")
                 ),
-            }
+            },
+            **{"id": record.id},
         )
     return out
 
@@ -150,3 +135,26 @@ def update_article():
     _validate_request_for_update_article_sync_db(request=request_dict)
     add_synchronous_components_to_db(db, COLLECTION_NAME, **request_dict)
     return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
+
+
+@articles_blue.route("/update_article", endpoint="/update_article", methods=["POST"])
+def update_article_flow():
+    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
+    db, doc_ref, _, _ = _make_db_connection()
+    doc_id = request_dict.get("id")
+    request_dict.pop("id")
+    db_insert_dict = {
+        RENDER_MAPPER.get(key)[0]: value for key, value in request_dict.items()
+    }
+    add_synchronous_components_to_db(
+        db, COLLECTION_NAME, doc_id=doc_id, db_insert_dict=db_insert_dict
+    )
+    return request_dict
+
+
+@articles_blue.route("/getreadstatus", endpoint="/getreadstatus", methods=["POST"])
+def get_read_status():
+    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
+    db, doc_ref, _, _ = _make_db_connection()
+    doc: DocumentReference = doc_ref.document(request_dict.get("id"))
+    return {"read_status": doc.get().to_dict().get("ReadStatus")}

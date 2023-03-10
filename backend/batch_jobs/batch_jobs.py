@@ -1,6 +1,6 @@
 from typing import Callable
 from backend.integrations.utils.utils import _make_db_connection
-from backend.batch_jobs.batch_update_config import add_site_label
+from backend.batch_jobs.batch_update_config import add_site_label, add_read_status
 
 
 def batch_update_db_with_new_key_value(
@@ -12,4 +12,4 @@ def batch_update_db_with_new_key_value(
         doc_ref.document(d.id).update({key_name: updated_value})
 
 
-batch_update_db_with_new_key_value("SiteLabel", add_site_label)
+batch_update_db_with_new_key_value("ReadStatus", add_read_status)

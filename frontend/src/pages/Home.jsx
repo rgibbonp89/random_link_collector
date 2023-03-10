@@ -49,9 +49,28 @@ function Home() {
     setPage(selectedPage.selected);
   };
 
-  const handleMenuToggle = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
+  const handleToggleRead = (item) => {
+      /*const updatedData = jsonData.map(i => {
+        if (i.id === item.id) {
+          return { ...i, read: !i.read };
+        }
+        return i;
+      });*/
+      const newStatus = !item.read_status; // flip the read status
+      fetch(`/update_article`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: item.id, read_status: newStatus }),
+          })
+          .then((response) => response.json())
+          .then((data) => {
+            setJsonData((prevData) =>
+            prevData.map((d) => (d.id === item.id ? { ...d, read_status: newStatus } : d))
+        );
+      })
+    };
+
 
   return (
     <div className="App">
@@ -76,6 +95,9 @@ function Home() {
             <p>Short summary: {item.short_summary}</p>
             <button className={'button'} onClick={() => handleBoxMinimize(item.name_input)}
             >Expand</button>
+            <button className={'button'} onClick={() => handleToggleRead(item)}>
+              {item.read_status ? 'Mark as unread' : 'Mark as read'}
+            </button>
             {!minimizedBoxes.includes(item.name_input) &&
               <>
                 <p className="subheader"> Auto-summary:</p>

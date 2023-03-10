@@ -2,7 +2,7 @@ import random
 import string
 from functools import partial
 from pathlib import Path
-from typing import List, Optional, Dict, Generator
+from typing import List, Optional, Dict, Generator, Tuple, Callable
 
 from google.cloud import firestore
 from google.cloud.firestore_v1 import (
@@ -20,6 +20,17 @@ AUTOSUMMARY_PROMPT_KEY = "prompt"
 AUTOSUMMARY_KEY = "auto_summary"
 SHORT_SUMMARY_KEY = "short_summary"
 SITE_LABEL_KEY = "site_label"
+READ_STATUS_KEY = "read_status"
+
+NAME_INPUT_KEY_DB = "NameInput"
+URL_INPUT_KEY_DB = "URL"
+MY_SUMMARY_KEY_DB = "MySummary"
+AUTOSUMMARY_PROMPT_KEY_DB = "Prompt"
+AUTOSUMMARY_KEY_DB = "AutoSummary"
+SHORT_SUMMARY_KEY_DB = "ShortSummary"
+SITE_LABEL_KEY_DB = "SiteLabel"
+READ_STATUS_KEY_DB = "ReadStatus"
+
 
 expected_keys_initial_submission: List[str] = [
     NAME_INPUT_KEY,
@@ -35,6 +46,21 @@ expected_keys_edit_article_sync_db: List[str] = [
     MY_SUMMARY_KEY,
     AUTOSUMMARY_PROMPT_KEY,
 ]
+
+RENDER_MAPPER: Dict[str, Tuple[str, Callable]] = {
+    MY_SUMMARY_KEY: (MY_SUMMARY_KEY_DB, lambda x: x),
+    AUTOSUMMARY_KEY: (
+        AUTOSUMMARY_KEY_DB,
+        lambda x: x.replace("• ", "* ")
+        .replace("- ", "* ")
+        .replace("Main arguments:", ""),
+    ),
+    NAME_INPUT_KEY: (NAME_INPUT_KEY_DB, lambda x: x),
+    URL_INPUT_KEY: (URL_INPUT_KEY_DB, lambda x: x),
+    SHORT_SUMMARY_KEY: (SHORT_SUMMARY_KEY_DB, lambda x: x),
+    SITE_LABEL_KEY: (SITE_LABEL_KEY_DB, lambda x: x),
+    READ_STATUS_KEY: (READ_STATUS_KEY_DB, lambda x: x),
+}
 
 
 def _validate_request_contents(
@@ -62,11 +88,7 @@ _validate_request_for_update_article_sync_db = partial(
 def add_synchronous_components_to_db(
     db: Client,
     collection_name: str,
-    name_input: str,
-    url_input: str,
-    my_summary: str,
-    prompt: str,
-    site_label: str,
+    db_insert_dict: Dict[str, str],
     doc_id: Optional[str] = None,
 ) -> str:
     reference_exists = True if doc_id else False
@@ -74,25 +96,9 @@ def add_synchronous_components_to_db(
         doc_id = create_doc_id()
     doc_ref = db.collection(collection_name).document(doc_id)
     if not reference_exists:
-        doc_ref.set(
-            {
-                "Name": name_input,
-                "URL": url_input,
-                "MySummary": my_summary,
-                "Prompt": prompt,
-                "SiteLabel": site_label,
-            }
-        )
+        doc_ref.set(db_insert_dict)
     else:
-        doc_ref.update(
-            {
-                "Name": name_input,
-                "URL": url_input,
-                "MySummary": my_summary,
-                "Prompt": prompt,
-                "SiteLabel": site_label,
-            }
-        )
+        doc_ref.update(db_insert_dict)
     return doc_id
 
 
