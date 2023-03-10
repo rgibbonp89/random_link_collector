@@ -2,6 +2,7 @@
 import asyncio
 import json
 from typing import Dict
+from urllib.parse import urlparse
 
 from google.cloud import firestore
 from dotenv import load_dotenv
@@ -16,6 +17,7 @@ from backend.integrations.utils.utils import (
     URL_INPUT_KEY,
     AUTOSUMMARY_PROMPT_KEY,
     _validate_request_for_initial_submission,
+    SITE_LABEL_KEY,
 )
 from backend.integrations.utils.utils import (
     add_synchronous_components_to_db,
@@ -45,6 +47,9 @@ def _submit_article(service) -> None:
         else request_dict.get(AUTOSUMMARY_PROMPT_KEY)
     )
     request_dict.update({AUTOSUMMARY_PROMPT_KEY: prompt})
+    request_dict.update(
+        {SITE_LABEL_KEY: urlparse(request_dict.get(URL_INPUT_KEY)).netloc}
+    )
 
     doc_id = add_synchronous_components_to_db(
         db=db,

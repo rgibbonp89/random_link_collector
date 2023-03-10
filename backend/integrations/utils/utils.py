@@ -1,9 +1,16 @@
 import random
 import string
 from functools import partial
-from typing import List, Optional, Dict
+from pathlib import Path
+from typing import List, Optional, Dict, Generator
 
-from google.cloud.firestore_v1 import Client, DocumentReference
+from google.cloud import firestore
+from google.cloud.firestore_v1 import (
+    Client,
+    DocumentReference,
+    DocumentSnapshot,
+    CollectionReference,
+)
 
 ID_LENGTH = 15
 NAME_INPUT_KEY = "name_input"
@@ -12,6 +19,7 @@ MY_SUMMARY_KEY = "my_summary"
 AUTOSUMMARY_PROMPT_KEY = "prompt"
 AUTOSUMMARY_KEY = "auto_summary"
 SHORT_SUMMARY_KEY = "short_summary"
+SITE_LABEL_KEY = "site_label"
 
 expected_keys_initial_submission: List[str] = [
     NAME_INPUT_KEY,
@@ -58,6 +66,7 @@ def add_synchronous_components_to_db(
     url_input: str,
     my_summary: str,
     prompt: str,
+    site_label: str,
     doc_id: Optional[str] = None,
 ) -> str:
     reference_exists = True if doc_id else False
@@ -71,6 +80,7 @@ def add_synchronous_components_to_db(
                 "URL": url_input,
                 "MySummary": my_summary,
                 "Prompt": prompt,
+                "SiteLabel": site_label,
             }
         )
     else:
@@ -80,6 +90,7 @@ def add_synchronous_components_to_db(
                 "URL": url_input,
                 "MySummary": my_summary,
                 "Prompt": prompt,
+                "SiteLabel": site_label,
             }
         )
     return doc_id
@@ -108,3 +119,18 @@ async def add_async_components_to_db(
             "ShortSummary": one_liner,
         }
     )
+
+
+COLLECTION_NAME = "articles"
+
+
+def _make_db_connection():
+    db: Client = firestore.Client.from_service_account_json(
+        f"{Path(__file__).parent.parent.parent.parent}/.keys/firebase.json"
+    )
+    doc_ref: CollectionReference = db.collection(COLLECTION_NAME)
+    docs: Generator[DocumentSnapshot] = doc_ref.stream()
+    list_in_first_tab: List[DocumentSnapshot] = sorted(
+        [doc for doc in docs], key=lambda x: x.create_time, reverse=True
+    )
+    return db, doc_ref, docs, list_in_first_tab

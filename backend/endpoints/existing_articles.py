@@ -3,11 +3,9 @@ import json
 from typing import Dict, Tuple, Callable, List, Generator, Any
 from flask import Blueprint, request, Request
 from flask_cors import CORS
-from google.cloud import firestore
 from google.cloud.firestore_v1 import (
     DocumentSnapshot,
 )
-from pathlib import Path
 from fuzzywuzzy import fuzz
 from backend.integrations.model_enpoint import call_model_endpoint
 from backend.integrations.utils.utils import (
@@ -21,6 +19,9 @@ from backend.integrations.utils.utils import (
     URL_INPUT_KEY,
     AUTOSUMMARY_PROMPT_KEY,
     SHORT_SUMMARY_KEY,
+    COLLECTION_NAME,
+    SITE_LABEL_KEY,
+    _make_db_connection,
 )
 
 articles_blue = Blueprint("articlesblue", __name__)
@@ -30,20 +31,6 @@ SEARCH_STRICTNESS_CONSTANT = 95
 SEARCH_STRICTNESS_KEY = "search_strictness"
 UPDATE_AUTO_SUMMARY_KEY = "update_auto_summary"
 DOCUMENT_NAME_KEY = "Name"
-COLLECTION_NAME = "articles"
-
-
-def _make_db_connection():
-    db = firestore.Client.from_service_account_json(
-        f"{Path(__file__).parent.parent.parent}/.keys/firebase.json"
-    )
-    doc_ref = db.collection(COLLECTION_NAME)
-    docs = doc_ref.stream()
-    list_in_first_tab = sorted(
-        [doc for doc in docs], key=lambda x: x.create_time, reverse=True
-    )
-    return db, doc_ref, docs, list_in_first_tab
-
 
 RENDER_MAPPER: Dict[str, Tuple[str, Callable]] = {
     MY_SUMMARY_KEY: ("MySummary", lambda x: x),
@@ -56,6 +43,7 @@ RENDER_MAPPER: Dict[str, Tuple[str, Callable]] = {
     NAME_INPUT_KEY: ("Name", lambda x: x),
     URL_INPUT_KEY: ("URL", lambda x: x),
     SHORT_SUMMARY_KEY: ("ShortSummary", lambda x: x),
+    SITE_LABEL_KEY: ("SiteLabel", lambda x: x),
 }
 
 

@@ -23,6 +23,14 @@ function Home() {
       .catch(error => console.error(error));
   }, []);
 
+  const labelVisualizationEnum = {
+    "www.phenomenalworld.org": "Phenomenal World",
+    "www.ft.com": "FT",
+    "open.substack.com": "Substack",
+    "substack.com": "Substack",
+    "www.foreignaffairs.com": "Foreign Affairs",
+    "www.currentaffairs.org": "Current Affairs"
+  };
 
   const handleBoxMinimize = (boxId) => {
     if (!minimizedBoxes.includes(boxId)) {
@@ -60,6 +68,7 @@ function Home() {
                className={`box
                ${minimizedBoxes.includes(item.name_input) ? 'box--minimized' : ''}`}
           >
+            <div className="tag">{labelVisualizationEnum[item.site_label]}</div>
            <a
                href={item.url_input}>
               <h2>{item.name_input}</h2>
