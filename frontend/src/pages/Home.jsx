@@ -1,26 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import './App.css';
-import ReactMarkdown from 'react-markdown';
-import ReactPaginate from 'react-paginate';
-
-
+import React, { useState, useEffect } from "react";
+import "./App.css";
+import ReactMarkdown from "react-markdown";
+import ReactPaginate from "react-paginate";
 
 function Home() {
   const [jsonData, setJsonData] = useState([]);
   const [page, setPage] = useState(0);
   const [minimizedBoxes, setMinimizedBoxes] = useState([]);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const queryParams = `?timestamp=${new Date().getTime()}`;
     // Make an HTTP request to the endpoint and get the JSON data
     fetch(`/getallarticles${queryParams}`)
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         setJsonData(data);
-        setMinimizedBoxes(data.map(item => item.name_input));
+        setMinimizedBoxes(data.map((item) => item.name_input));
       })
-      .catch(error => console.error(error));
+      .catch((error) => console.error(error));
   }, []);
 
   const labelVisualizationEnum = {
@@ -29,25 +26,25 @@ function Home() {
     "open.substack.com": "Substack",
     "substack.com": "Substack",
     "www.foreignaffairs.com": "Foreign Affairs",
-    "www.currentaffairs.org": "Current Affairs"
+    "www.currentaffairs.org": "Current Affairs",
   };
 
   function fuzzyMatchEnum(key) {
-  for (const enumKey in labelVisualizationEnum) {
-    if (key.includes(enumKey)) {
-      return labelVisualizationEnum[enumKey];
+    for (const enumKey in labelVisualizationEnum) {
+      if (key.includes(enumKey)) {
+        return labelVisualizationEnum[enumKey];
+      }
     }
+    return key;
   }
-  return key;
-}
 
   const handleBoxMinimize = (boxId) => {
     if (!minimizedBoxes.includes(boxId)) {
       setMinimizedBoxes([...minimizedBoxes, boxId]);
     } else {
-      setMinimizedBoxes(minimizedBoxes.filter(id => id !== boxId));
+      setMinimizedBoxes(minimizedBoxes.filter((id) => id !== boxId));
     }
-  }
+  };
 
   const itemsPerPage = 10;
   const pageCount = jsonData ? Math.ceil(jsonData.length / itemsPerPage) : 0;
@@ -59,69 +56,76 @@ function Home() {
   };
 
   const handleToggleRead = (item) => {
-      const newStatus = !item.read_status; // flip the read status
-      fetch(`/update_article`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: item.id, read_status: newStatus }),
-          })
-          .then((response) => response.json())
-          .then((data) => {
-            setJsonData((prevData) =>
-            prevData.map((d) => (d.id === item.id ? { ...d, read_status: newStatus } : d))
+    const newStatus = !item.read_status; // flip the read status
+    fetch(`/update_article`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id, read_status: newStatus }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        setJsonData((prevData) =>
+          prevData.map((d) =>
+            d.id === item.id ? { ...d, read_status: newStatus } : d
+          )
         );
-      })
-    };
-
+      });
+  };
 
   return (
     <div className="App">
-
       <header className="App-header">
-        <p>
-          Welcome to the article saver!
-        </p>
+        <p>Welcome to the article saver!</p>
       </header>
-        <header className="App"></header>
+      <header className="App"></header>
 
-        {currentPageData.map(item => (
-          <div key={item.name_input}
-               className={`box
-               ${minimizedBoxes.includes(item.name_input) ? 'box--minimized' : ''}`}
+      {currentPageData.map((item) => (
+        <div
+          key={item.name_input}
+          className={`box
+               ${
+                 minimizedBoxes.includes(item.name_input)
+                   ? "box--minimized"
+                   : ""
+               }`}
+        >
+          <div className="tag">{fuzzyMatchEnum(item.site_label)}</div>
+          <a href={item.url_input}>
+            <h2>{item.name_input}</h2>
+          </a>
+          <p>Short summary: {item.short_summary}</p>
+          <button
+            className={"button"}
+            onClick={() => handleBoxMinimize(item.name_input)}
           >
-            <div className="tag">{fuzzyMatchEnum(item.site_label)}</div>
-           <a href={item.url_input}><h2>{item.name_input}</h2></a>
-            <p>Short summary: {item.short_summary}</p>
-            <button className={'button'} onClick={() => handleBoxMinimize(item.name_input)}
-            >Expand</button>
-            <button className={'button'} onClick={() => handleToggleRead(item)}>
-              {item.read_status ? 'Read' : 'Unread'}
-            </button>
-            {!minimizedBoxes.includes(item.name_input) &&
-              <>
-                <p className="subheader"> Auto-summary:</p>
-                <ReactMarkdown>{item.auto_summary}</ReactMarkdown>
-                <p className="subheader"> My summary:</p>
-                <ReactMarkdown>{item.my_summary}</ReactMarkdown>
-              </>
-            }
-          </div>
-        ))}
-        <ReactPaginate
-          pageCount={pageCount}
-          onPageChange={handlePageClick}
-          containerClassName={'pagination'}
-          pageLinkClassName={'page-link'}
-          previousLinkClassName={'page-link'}
-          nextLinkClassName={'page-link'}
-          disabledClassName={'disabled'}
-          activeClassName={'active'}
-          pageRangeDisplayed={5}
-          marginPagesDisplayed={2}
-          pageLinkStyle={{ listStyleType: 'none' }}
-
-        />
+            Expand
+          </button>
+          <button className={"button"} onClick={() => handleToggleRead(item)}>
+            {item.read_status ? "Read" : "Unread"}
+          </button>
+          {!minimizedBoxes.includes(item.name_input) && (
+            <>
+              <p className="subheader"> Auto-summary:</p>
+              <ReactMarkdown>{item.auto_summary}</ReactMarkdown>
+              <p className="subheader"> My summary:</p>
+              <ReactMarkdown>{item.my_summary}</ReactMarkdown>
+            </>
+          )}
+        </div>
+      ))}
+      <ReactPaginate
+        pageCount={pageCount}
+        onPageChange={handlePageClick}
+        containerClassName={"pagination"}
+        pageLinkClassName={"page-link"}
+        previousLinkClassName={"page-link"}
+        nextLinkClassName={"page-link"}
+        disabledClassName={"disabled"}
+        activeClassName={"active"}
+        pageRangeDisplayed={5}
+        marginPagesDisplayed={2}
+        pageLinkStyle={{ listStyleType: "none" }}
+      />
     </div>
   );
 }

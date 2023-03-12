@@ -6,7 +6,6 @@
   margin-outside: 1vh;
   font-family: "PT Sans", Calibri, Tahoma, sans-serif;
   background-color: blanchedalmond;
-
 }
 
 .container {
@@ -86,7 +85,7 @@
   margin-bottom: 2rem;
 }
 
-.pagination .page-link{
+.pagination .page-link {
   color: red;
 }
 
@@ -131,25 +130,25 @@
 }
 
 .button {
-	pointer-events: auto;
-	cursor: pointer;
-	background: #e7e7e7;
-	border: none;
-	padding: 1rem 1.5rem;
-	margin: 5px;
-	font-family: inherit;
-	font-size: inherit;
-	position: relative;
-	display: inline-block;
+  pointer-events: auto;
+  cursor: pointer;
+  background: #e7e7e7;
+  border: none;
+  padding: 1rem 1.5rem;
+  margin: 5px;
+  font-family: inherit;
+  font-size: inherit;
+  position: relative;
+  display: inline-block;
 }
 
 .button::before,
 .button::after {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 50%;
-	height: 50%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 50%;
 }
 
 /* styles for smaller screens */
@@ -172,7 +171,7 @@ li a:hover {
 }
 
 .active {
-  background-color: #04AA6D;
+  background-color: #04aa6d;
 }
 
 .navbar {
