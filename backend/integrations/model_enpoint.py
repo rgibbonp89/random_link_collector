@@ -12,13 +12,13 @@ load_dotenv()
 openai.api_key = os.environ.get("OPENAI_KEY")
 
 
-def call_model_endpoint(prompt: str):
+def call_model_endpoint(prompt: str, max_tokens: int = 500):
     try:
         completion: Completion = openai.ChatCompletion.create(
             model=MODEL_ENGINE,
             messages=[{"role": "user", "content": prompt}],
             n=1,
-            max_tokens=MAX_TOKENS,
+            max_tokens=max_tokens,
             temperature=TEMPERATURE,
         )
         saved_text = (

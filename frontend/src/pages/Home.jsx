@@ -50,12 +50,6 @@ function Home() {
   };
 
   const handleToggleRead = (item) => {
-      /*const updatedData = jsonData.map(i => {
-        if (i.id === item.id) {
-          return { ...i, read: !i.read };
-        }
-        return i;
-      });*/
       const newStatus = !item.read_status; // flip the read status
       fetch(`/update_article`,
           {
@@ -88,10 +82,7 @@ function Home() {
                ${minimizedBoxes.includes(item.name_input) ? 'box--minimized' : ''}`}
           >
             <div className="tag">{labelVisualizationEnum[item.site_label]}</div>
-           <a
-               href={item.url_input}>
-              <h2>{item.name_input}</h2>
-            </a>
+           <a href={item.url_input}><h2>{item.name_input}</h2></a>
             <p>Short summary: {item.short_summary}</p>
             <button className={'button'} onClick={() => handleBoxMinimize(item.name_input)}
             >Expand</button>

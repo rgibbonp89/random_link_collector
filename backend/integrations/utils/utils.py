@@ -22,7 +22,7 @@ SHORT_SUMMARY_KEY = "short_summary"
 SITE_LABEL_KEY = "site_label"
 READ_STATUS_KEY = "read_status"
 
-NAME_INPUT_KEY_DB = "NameInput"
+NAME_INPUT_KEY_DB = "Name"
 URL_INPUT_KEY_DB = "URL"
 MY_SUMMARY_KEY_DB = "MySummary"
 AUTOSUMMARY_PROMPT_KEY_DB = "Prompt"

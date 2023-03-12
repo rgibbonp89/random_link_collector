@@ -54,12 +54,14 @@ def _submit_article(service) -> None:
     request_dict.update(
         {
             SITE_LABEL_KEY: urlparse(request_dict.get(URL_INPUT_KEY)).netloc,
-            READ_STATUS_KEY: "not_read",
+            READ_STATUS_KEY: False,
         }
     )
 
     db_insert_dict = {
-        RENDER_MAPPER.get(key)[0]: value for key, value in request_dict.items()
+        RENDER_MAPPER.get(key)[0]: value
+        for key, value in request_dict.items()
+        if key in list(RENDER_MAPPER.keys())
     }
 
     doc_id = add_synchronous_components_to_db(
@@ -68,9 +70,13 @@ def _submit_article(service) -> None:
         db_insert_dict=db_insert_dict,
     )
 
-    model_response_text = call_model_endpoint(prompt)
+    model_response_text = call_model_endpoint(
+        prompt, max_tokens=int(request_dict.get("max_tokens", 500))
+    )
     one_liner_prompt = f"Can you summarize this in one line: {model_response_text}?"
-    one_liner = call_model_endpoint(one_liner_prompt)
+    one_liner = call_model_endpoint(
+        one_liner_prompt, max_tokens=int(request_dict.get("max_tokens", 500))
+    )
 
     asyncio.run(
         add_async_components_to_db(
