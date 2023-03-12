@@ -32,6 +32,15 @@ function Home() {
     "www.currentaffairs.org": "Current Affairs"
   };
 
+  function fuzzyMatchEnum(key) {
+  for (const enumKey in labelVisualizationEnum) {
+    if (key.includes(enumKey)) {
+      return labelVisualizationEnum[enumKey];
+    }
+  }
+  return key;
+}
+
   const handleBoxMinimize = (boxId) => {
     if (!minimizedBoxes.includes(boxId)) {
       setMinimizedBoxes([...minimizedBoxes, boxId]);
@@ -81,13 +90,13 @@ function Home() {
                className={`box
                ${minimizedBoxes.includes(item.name_input) ? 'box--minimized' : ''}`}
           >
-            <div className="tag">{labelVisualizationEnum[item.site_label]}</div>
+            <div className="tag">{fuzzyMatchEnum(item.site_label)}</div>
            <a href={item.url_input}><h2>{item.name_input}</h2></a>
             <p>Short summary: {item.short_summary}</p>
             <button className={'button'} onClick={() => handleBoxMinimize(item.name_input)}
             >Expand</button>
             <button className={'button'} onClick={() => handleToggleRead(item)}>
-              {item.read_status ? 'Mark as unread' : 'Mark as read'}
+              {item.read_status ? 'Read' : 'Unread'}
             </button>
             {!minimizedBoxes.includes(item.name_input) &&
               <>
