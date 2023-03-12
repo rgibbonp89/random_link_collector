@@ -7,10 +7,11 @@ function Home() {
   const [jsonData, setJsonData] = useState([]);
   const [page, setPage] = useState(0);
   const [minimizedBoxes, setMinimizedBoxes] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [readStatusFilter, setReadStatusFilter] = useState("all");
 
-  useEffect(() => {
+  const fetchData = () => {
     const queryParams = `?timestamp=${new Date().getTime()}`;
-    // Make an HTTP request to the endpoint and get the JSON data
     fetch(`/getallarticles${queryParams}`)
       .then((response) => response.json())
       .then((data) => {
@@ -18,6 +19,10 @@ function Home() {
         setMinimizedBoxes(data.map((item) => item.name_input));
       })
       .catch((error) => console.error(error));
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
   const labelVisualizationEnum = {
@@ -47,9 +52,24 @@ function Home() {
   };
 
   const itemsPerPage = 10;
-  const pageCount = jsonData ? Math.ceil(jsonData.length / itemsPerPage) : 0;
   const offset = page * itemsPerPage;
-  const currentPageData = jsonData.slice(offset, offset + itemsPerPage);
+  const filteredData = jsonData.filter((item) => {
+    const includesSearchQuery = item.name_input
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    if (readStatusFilter === "all") {
+      return includesSearchQuery;
+    } else if (readStatusFilter === "read") {
+      return item.read_status && includesSearchQuery;
+    } else if (readStatusFilter === "unread") {
+      return !item.read_status && includesSearchQuery;
+    }
+    return true; // fallback for invalid readStatusFilter values
+  });
+  const pageCount = filteredData
+    ? Math.ceil(filteredData.length / itemsPerPage)
+    : 0;
+  const currentPageData = filteredData.slice(offset, offset + itemsPerPage);
 
   const handlePageClick = (selectedPage) => {
     setPage(selectedPage.selected);
@@ -78,7 +98,33 @@ function Home() {
         <p>Welcome to the article saver!</p>
       </header>
       <header className="App"></header>
-
+      <input
+        className={"search-bar"}
+        type="text"
+        placeholder="Search articles..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+      />
+      <div style={{ display: "flex", justifyContent: "flex-start" }}>
+        <button
+          onClick={() => setReadStatusFilter("all")}
+          className={`button ${readStatusFilter === "all" ? "active" : ""}`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => setReadStatusFilter("read")}
+          className={`button ${readStatusFilter === "read" ? "active" : ""}`}
+        >
+          Read
+        </button>
+        <button
+          onClick={() => setReadStatusFilter("unread")}
+          className={`button ${readStatusFilter === "unread" ? "active" : ""}`}
+        >
+          Unread
+        </button>
+      </div>
       {currentPageData.map((item) => (
         <div
           key={item.name_input}
