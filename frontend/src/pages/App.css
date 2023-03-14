@@ -6,7 +6,6 @@
   margin-outside: 1vh;
   font-family: "PT Sans", Calibri, Tahoma, sans-serif;
   background-color: blanchedalmond;
-
 }
 
 .container {
@@ -37,6 +36,19 @@
   background-color: #70d0d4;
   margin-top: 10px;
   margin-bottom: 10px;
+  font-family: "PT Sans", Calibri, Tahoma, sans-serif;
+
+}
+
+.tag {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
 }
 
 .box .content {
@@ -44,9 +56,10 @@
   position: relative;
   top: 50px;
   left: 0;
-  height: 200px;
+  height: 400px;
   background-color: #ccc;
   width: fit-content;
+  margin-top: 100px;
 }
 
 .box.expanded .content {
@@ -74,7 +87,7 @@
   margin-bottom: 2rem;
 }
 
-.pagination .page-link{
+.pagination .page-link {
   color: red;
 }
 
@@ -119,25 +132,30 @@
 }
 
 .button {
-	pointer-events: auto;
-	cursor: pointer;
-	background: #e7e7e7;
-	border: none;
-	padding: 1rem 1.5rem;
-	margin: 0;
-	font-family: inherit;
-	font-size: inherit;
-	position: relative;
-	display: inline-block;
+  pointer-events: auto;
+  cursor: pointer;
+  background: #e7e7e7;
+  border: none;
+  padding: 1rem 1.5rem;
+  margin: 5px;
+  font-family: inherit;
+  font-size: inherit;
+  position: relative;
+  display: inline-block;
+}
+
+.delete-btn {
+  background-color: red;
+  color: white;
 }
 
 .button::before,
 .button::after {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 50%;
-	height: 50%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 50%;
 }
 
 /* styles for smaller screens */
@@ -160,13 +178,32 @@ li a:hover {
 }
 
 .active {
-  background-color: #04AA6D;
+  background-color: #04aa6d;
 }
 
 .navbar {
-  margin-top: 10px;
-  margin-bottom: 10px;
-  background-color: #ccc;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: space-between;
+  background-color: #f8f9fa;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 18px;
+}
+
+.navbar li {
+  padding: 10px;
+}
+
+.navbar li a {
+  text-decoration: none;
+  color: #212529;
+  transition: color 0.2s ease-in-out;
+}
+
+.navbar li a:hover {
+  color: #007bff;
 }
 
 form {
@@ -196,4 +233,10 @@ textarea {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   resize: vertical; /* allow the user to resize vertically */
   height: 300px; /* set the initial height to 150 pixels */
+}
+
+.search-bar {
+  position: absolute;
+  top: 75px;
+  left: 10px;
 }

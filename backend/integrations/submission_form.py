@@ -2,6 +2,7 @@
 import asyncio
 import json
 from typing import Dict
+from urllib.parse import urlparse
 
 from google.cloud import firestore
 from dotenv import load_dotenv
@@ -16,6 +17,9 @@ from backend.integrations.utils.utils import (
     URL_INPUT_KEY,
     AUTOSUMMARY_PROMPT_KEY,
     _validate_request_for_initial_submission,
+    SITE_LABEL_KEY,
+    RENDER_MAPPER,
+    READ_STATUS_KEY,
 )
 from backend.integrations.utils.utils import (
     add_synchronous_components_to_db,
@@ -40,26 +44,45 @@ def _submit_article(service) -> None:
     )
     prompt = (
         f"What are the main arguments in this text: {formatted_text}? "
+        f"Do not just quote the text. What evidence does the author bring to bear? "
         f"Please provide your answer in bullet points in markdown."
         if not request_dict.get(AUTOSUMMARY_PROMPT_KEY)
         else request_dict.get(AUTOSUMMARY_PROMPT_KEY)
     )
+
+    # clean this up and make it generic (update_request fn)
     request_dict.update({AUTOSUMMARY_PROMPT_KEY: prompt})
+    request_dict.update(
+        {
+            SITE_LABEL_KEY: urlparse(request_dict.get(URL_INPUT_KEY)).netloc,
+            READ_STATUS_KEY: False,
+        }
+    )
+
+    db_insert_dict = {
+        RENDER_MAPPER.get(key)[0]: value
+        for key, value in request_dict.items()
+        if key in list(RENDER_MAPPER.keys())
+    }
 
     doc_id = add_synchronous_components_to_db(
         db=db,
         collection_name=ARTICLE_COLLECTION,
-        **request_dict,
+        db_insert_dict=db_insert_dict,
     )
 
-    model_response_text = call_model_endpoint(prompt)
+    model_response_text = call_model_endpoint(
+        prompt, max_tokens=int(request_dict.get("max_tokens", 500))
+    )
     one_liner_prompt = f"Can you summarize this in one line: {model_response_text}?"
-    one_liner = call_model_endpoint(one_liner_prompt)
+    one_liner = call_model_endpoint(
+        one_liner_prompt, max_tokens=int(request_dict.get("max_tokens", 500))
+    )
 
     asyncio.run(
         add_async_components_to_db(
             db,
-            "articles",
+            ARTICLE_COLLECTION,
             doc_id,
             model_response_text,
             cleaned_text=formatted_text,
