@@ -85,55 +85,12 @@ def get_all_articles():
     return _view_all_records()
 
 
-@articles_blue.route("/getsinglearticle", endpoint="getsinglearticle", methods=["POST"])
-def get_single_article():
-    _, doc_ref, _, _ = _make_db_connection()
-    doc_id, _, _ = _match_record_and_find_id(request_obj=request)
-    return _view_record(doc_ref.document(doc_id).get())
-
-
-@articles_blue.route(
-    "/deletesinglearticle", endpoint="deletesinglearticle", methods=["POST"]
-)
+@articles_blue.route("/deletearticle", endpoint="deletearticle", methods=["POST"])
 def delete_single_article():
+    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
     _, doc_ref, _, _ = _make_db_connection()
-    doc_id, _, _ = _match_record_and_find_id(request_obj=request)
+    doc_id = request_dict.get("id")
     doc_ref.document(doc_id).delete()
-    return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
-
-
-@articles_blue.route("/updatearticle", endpoint="updatearticle", methods=["POST"])
-def update_article():
-    db, doc_ref, _, _ = _make_db_connection()
-
-    doc_id, number_results_found, request_dict = _match_record_and_find_id(
-        request_obj=request
-    )
-    _validate_request_for_update_article(request=request_dict)
-    request_dict.update({"doc_id": doc_id})
-    doc: Dict[str, str] = doc_ref.document(doc_id).get().to_dict()
-    cleaned_text, prompt = doc.get("CleanedText"), doc.get("Prompt")
-    if request_dict.get(UPDATE_AUTO_SUMMARY_KEY) == "true":
-        model_response_text: str = call_model_endpoint(prompt)
-        one_liner_prompt = (
-            f"Can you summarize this in one sentence: {model_response_text}?"
-        )
-        one_liner = call_model_endpoint(one_liner_prompt)
-        asyncio.run(
-            add_async_components_to_db(
-                db,
-                COLLECTION_NAME,
-                doc_id,
-                model_response_text,
-                cleaned_text=cleaned_text,
-                one_liner=one_liner,
-            )
-        )
-    request_dict.pop(UPDATE_AUTO_SUMMARY_KEY, None)
-    request_dict.pop(SEARCH_STRICTNESS_KEY, None)
-    request_dict.update({URL_INPUT_KEY: doc.get("URL"), AUTOSUMMARY_PROMPT_KEY: prompt})
-    _validate_request_for_update_article_sync_db(request=request_dict)
-    add_synchronous_components_to_db(db, COLLECTION_NAME, **request_dict)
     return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
 
 

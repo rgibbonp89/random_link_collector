@@ -30,6 +30,8 @@ AUTOSUMMARY_KEY_DB = "AutoSummary"
 SHORT_SUMMARY_KEY_DB = "ShortSummary"
 SITE_LABEL_KEY_DB = "SiteLabel"
 READ_STATUS_KEY_DB = "ReadStatus"
+ELI5_KEY_DB = "ELI5"
+CLEANED_TEXT_KEY_DB = "CleanedText"
 
 
 expected_keys_initial_submission: List[str] = [
@@ -120,9 +122,9 @@ async def add_async_components_to_db(
     doc_ref: DocumentReference = db.collection(collection_name).document(doc_id)
     doc_ref.update(
         {
-            "AutoSummary": chat_gpt_response,
-            "CleanedText": cleaned_text,
-            "ShortSummary": one_liner,
+            AUTOSUMMARY_KEY_DB: chat_gpt_response,
+            CLEANED_TEXT_KEY_DB: cleaned_text,
+            SHORT_SUMMARY_KEY_DB: one_liner,
         }
     )
 

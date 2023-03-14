@@ -44,6 +44,7 @@ def _submit_article(service) -> None:
     )
     prompt = (
         f"What are the main arguments in this text: {formatted_text}? "
+        f"Do not just quote the text. What evidence does the author bring to bear? "
         f"Please provide your answer in bullet points in markdown."
         if not request_dict.get(AUTOSUMMARY_PROMPT_KEY)
         else request_dict.get(AUTOSUMMARY_PROMPT_KEY)
@@ -81,7 +82,7 @@ def _submit_article(service) -> None:
     asyncio.run(
         add_async_components_to_db(
             db,
-            "articles",
+            ARTICLE_COLLECTION,
             doc_id,
             model_response_text,
             cleaned_text=formatted_text,

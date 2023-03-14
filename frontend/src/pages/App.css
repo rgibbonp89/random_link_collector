@@ -36,6 +36,8 @@
   background-color: #70d0d4;
   margin-top: 10px;
   margin-bottom: 10px;
+  font-family: "PT Sans", Calibri, Tahoma, sans-serif;
+
 }
 
 .tag {
@@ -140,6 +142,11 @@
   font-size: inherit;
   position: relative;
   display: inline-block;
+}
+
+.delete-btn {
+  background-color: red;
+  color: white;
 }
 
 .button::before,

@@ -53,6 +53,7 @@ function Home() {
 
   const itemsPerPage = 10;
   const offset = page * itemsPerPage;
+
   const filteredData = jsonData.filter((item) => {
     const includesSearchQuery = item.name_input
       .toLowerCase()
@@ -90,6 +91,25 @@ function Home() {
           )
         );
       });
+  };
+
+  const handleDeleteArticle = (item) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this article?"
+    );
+    if (confirmed) {
+      fetch(`/deletearticle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id }),
+      })
+        .then(() => {
+          setJsonData(jsonData.filter((d) => d.id !== item.id));
+        })
+        .catch((error) => console.error(error));
+    } else {
+      const handleCancelDelete = () => {};
+    }
   };
 
   return (
@@ -148,6 +168,12 @@ function Home() {
           </button>
           <button className={"button"} onClick={() => handleToggleRead(item)}>
             {item.read_status ? "Read" : "Unread"}
+          </button>
+          <button
+            className={"button delete-btn"}
+            onClick={() => handleDeleteArticle(item)}
+          >
+            Delete
           </button>
           {!minimizedBoxes.includes(item.name_input) && (
             <>
