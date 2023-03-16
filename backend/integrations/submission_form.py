@@ -43,8 +43,7 @@ def _submit_article(service) -> None:
         service, article_url=request_dict.get(URL_INPUT_KEY)
     )
     prompt = (
-        f"What are the main arguments in this text: {formatted_text}? "
-        f"Do not just quote the text. What evidence does the author bring to bear? "
+        f"Can you provide a TL;DR of the following text: {formatted_text}? "
         f"Please provide your answer in bullet points in markdown."
         if not request_dict.get(AUTOSUMMARY_PROMPT_KEY)
         else request_dict.get(AUTOSUMMARY_PROMPT_KEY)
