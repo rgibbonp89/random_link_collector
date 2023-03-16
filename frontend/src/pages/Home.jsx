@@ -9,6 +9,7 @@ function Home() {
   const [minimizedBoxes, setMinimizedBoxes] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [readStatusFilter, setReadStatusFilter] = useState("all");
+  const [editArticle, setEditArticle] = useState([]);
 
   const fetchData = () => {
     const queryParams = `?timestamp=${new Date().getTime()}`;
@@ -112,6 +113,30 @@ function Home() {
     }
   };
 
+  const handleEditArticle = (event, item) => {
+    event.preventDefault();
+    const updatedArticle = {
+      id: item.id,
+      name_input: event.target.elements.articleName.value,
+      site_label: event.target.elements.articleSite.value,
+      auto_summary: event.target.elements.articleAutoSummary.value,
+      my_summary: event.target.elements.articleMySummary.value,
+    };
+    fetch(`/update_article`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedArticle),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        setJsonData((prevData) =>
+          prevData.map((d) =>
+            d.id === item.id ? { ...d, ...updatedArticle } : d
+          )
+        );
+      });
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -175,6 +200,53 @@ function Home() {
           >
             Delete
           </button>
+
+          {editArticle !== item && (
+            <button
+              className={"button"}
+              onClick={() => setEditArticle(item)}
+              style={{
+                display: minimizedBoxes.includes(item.name_input)
+                  ? "none"
+                  : "block",
+              }}
+            >
+              Edit
+            </button>
+          )}
+          {editArticle === item && (
+            <form onSubmit={(event) => handleEditArticle(event, item)}>
+              <input
+                className={"input"}
+                type="text"
+                name="articleName"
+                defaultValue={item.name_input}
+                style={{ padding: "10px", marginBottom: "10px" }}
+              />
+              <input
+                className={"input"}
+                type="text"
+                name="articleSite"
+                defaultValue={item.site_label}
+                style={{ padding: "10px", marginBottom: "10px" }}
+              />
+              <textarea
+                className={"textarea"}
+                type="text"
+                name="articleAutoSummary"
+                defaultValue={item.auto_summary}
+                style={{ padding: "10px", marginBottom: "10px" }}
+              />
+              <textarea
+                className={"textarea"}
+                type="text"
+                name="articleMySummary"
+                defaultValue={item.my_summary}
+                style={{ padding: "10px", marginBottom: "10px" }}
+              />
+              <button type="submit">Save</button>
+            </form>
+          )}
           {!minimizedBoxes.includes(item.name_input) && (
             <>
               <p className="subheader"> Auto-summary:</p>
