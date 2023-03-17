@@ -21,6 +21,9 @@ AUTOSUMMARY_KEY = "auto_summary"
 SHORT_SUMMARY_KEY = "short_summary"
 SITE_LABEL_KEY = "site_label"
 READ_STATUS_KEY = "read_status"
+ID_LIST_KEY = "id_list"
+SYNTHESIS_KEY = "synthesis"
+URL_LIST_KEY = "url_list"
 
 NAME_INPUT_KEY_DB = "Name"
 URL_INPUT_KEY_DB = "URL"
@@ -32,6 +35,12 @@ SITE_LABEL_KEY_DB = "SiteLabel"
 READ_STATUS_KEY_DB = "ReadStatus"
 ELI5_KEY_DB = "ELI5"
 CLEANED_TEXT_KEY_DB = "CleanedText"
+ID_LIST_KEY_DB = "IDList"
+SYNTHESIS_KEY_DB = "Synthesis"
+URL_LIST_KEY_DB = "URLList"
+
+COLLECTION_NAME = "articles"
+SYNTHESIS_COLLECTION = "syntheses"
 
 
 expected_keys_initial_submission: List[str] = [
@@ -127,9 +136,6 @@ async def add_async_components_to_db(
             SHORT_SUMMARY_KEY_DB: one_liner,
         }
     )
-
-
-COLLECTION_NAME = "articles"
 
 
 def _make_db_connection():

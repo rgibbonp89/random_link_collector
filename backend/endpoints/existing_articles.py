@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Dict, List, Generator, Any
+from typing import Dict, List, Generator, Any, Optional
 from flask import Blueprint, request, Request
 from flask_cors import CORS
 from google.cloud.firestore_v1 import (
@@ -10,15 +10,15 @@ from google.cloud.firestore_v1 import (
 from fuzzywuzzy import fuzz
 from backend.integrations.model_enpoint import call_model_endpoint
 from backend.integrations.utils.utils import (
-    add_async_components_to_db,
     add_synchronous_components_to_db,
-    _validate_request_for_update_article,
-    _validate_request_for_update_article_sync_db,
     NAME_INPUT_KEY,
-    URL_INPUT_KEY,
-    AUTOSUMMARY_PROMPT_KEY,
     COLLECTION_NAME,
     _make_db_connection,
+    SYNTHESIS_COLLECTION,
+    create_doc_id,
+    ID_LIST_KEY_DB,
+    SYNTHESIS_KEY_DB,
+    URL_LIST_KEY_DB,
 )
 from backend.integrations.utils.utils import RENDER_MAPPER
 
@@ -115,3 +115,41 @@ def get_read_status():
     db, doc_ref, _, _ = _make_db_connection()
     doc: DocumentReference = doc_ref.document(request_dict.get("id"))
     return {"read_status": doc.get().to_dict().get("ReadStatus")}
+
+
+@articles_blue.route("/createsynthesis", endpoint="/createsynthesis", methods=["POST"])
+def create_synthesis():
+    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
+    ids: Optional[List[str], None] = request_dict.get("ids")
+    topic: str = request_dict.get("topic")
+    db, doc_ref, _, _ = _make_db_connection()
+    out_content: Dict[str, List[str, str]] = dict()
+    for id in ids:
+        out_content.update(
+            {
+                id: [
+                    doc_ref.document(id).get().to_dict().get("AutoSummary"),
+                    doc_ref.document(id).get().to_dict().get("URL"),
+                ]
+            }
+        )
+
+    synthesis_prompt = f"""Provide a synthesis of the following {len(ids)} texts.
+    Focus on where they agree and differ, providing an overview of where
+    their authors stand on the topic of {topic}: \n"""
+    i = 1
+    for id, text in out_content.items():
+        synthesis_prompt += f" \n Article {i}: {text[0]}"
+        i += 1
+
+    model_synthesis = call_model_endpoint(synthesis_prompt)
+    doc_id = create_doc_id()
+    doc_ref = db.collection(SYNTHESIS_COLLECTION).document(doc_id)
+    doc_ref.set(
+        {
+            ID_LIST_KEY_DB: ids,
+            SYNTHESIS_KEY_DB: model_synthesis,
+            URL_LIST_KEY_DB: [value[1] for keys, value in out_content.items()],
+        }
+    )
+    return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
