@@ -19,6 +19,9 @@ from backend.integrations.utils.utils import (
     ID_LIST_KEY_DB,
     SYNTHESIS_KEY_DB,
     URL_LIST_KEY_DB,
+    AUTOSUMMARY_KEY_DB,
+    URL_INPUT_KEY_DB,
+    NAME_INPUT_KEY_DB,
 )
 from backend.integrations.utils.utils import RENDER_MAPPER
 
@@ -123,13 +126,14 @@ def create_synthesis():
     ids: Optional[List[str], None] = request_dict.get("ids")
     topic: str = request_dict.get("topic")
     db, doc_ref, _, _ = _make_db_connection()
-    out_content: Dict[str, List[str, str]] = dict()
+    out_content: Dict[str, List[str, str, str]] = dict()
     for id in ids:
         out_content.update(
             {
                 id: [
-                    doc_ref.document(id).get().to_dict().get("AutoSummary"),
-                    doc_ref.document(id).get().to_dict().get("URL"),
+                    doc_ref.document(id).get().to_dict().get(AUTOSUMMARY_KEY_DB),
+                    doc_ref.document(id).get().to_dict().get(URL_INPUT_KEY_DB),
+                    doc_ref.document(id).get().to_dict().get(NAME_INPUT_KEY_DB),
                 ]
             }
         )
@@ -150,6 +154,7 @@ def create_synthesis():
             ID_LIST_KEY_DB: ids,
             SYNTHESIS_KEY_DB: model_synthesis,
             URL_LIST_KEY_DB: [value[1] for keys, value in out_content.items()],
+            NAME_LIST_KEY_DB: [value[2] for keys, value in out_content.items()],
         }
     )
     return json.dumps({"success": True}), 200, {"ContentType": "application/json"}

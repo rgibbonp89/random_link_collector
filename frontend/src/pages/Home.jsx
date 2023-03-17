@@ -10,6 +10,7 @@ function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [readStatusFilter, setReadStatusFilter] = useState("all");
   const [editArticle, setEditArticle] = useState([]);
+  const [selectedArticles, setSelectedArticles] = useState([]);
 
   const fetchData = () => {
     const queryParams = `?timestamp=${new Date().getTime()}`;
@@ -56,11 +57,9 @@ function Home() {
   const offset = page * itemsPerPage;
 
   const filteredData = jsonData.filter((item) => {
-    const includesSearchQuery = item.name_input
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase()) ||
-        item.auto_summary.toLowerCase().includes(searchQuery.toLowerCase())
-    ;
+    const includesSearchQuery =
+      item.name_input.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.auto_summary.toLowerCase().includes(searchQuery.toLowerCase());
     if (readStatusFilter === "all") {
       return includesSearchQuery;
     } else if (readStatusFilter === "read") {
@@ -139,6 +138,28 @@ function Home() {
       });
   };
 
+  const handleToggleSelected = (articleId) => {
+    if (selectedArticles.includes(articleId)) {
+      setSelectedArticles(selectedArticles.filter((id) => id !== articleId));
+    } else {
+      setSelectedArticles([...selectedArticles, articleId]);
+    }
+  };
+
+  const handleSynthesize = () => {
+    console.log(selectedArticles);
+    fetch("/createsynthesis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: selectedArticles }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        // do something with the data
+      })
+      .catch((error) => console.error(error));
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -171,6 +192,13 @@ function Home() {
         >
           Unread
         </button>
+        <button
+          className={"button"}
+          onClick={handleSynthesize}
+          disabled={selectedArticles.length === 0}
+        >
+          Synthesize
+        </button>
       </div>
       {currentPageData.map((item) => (
         <div
@@ -182,6 +210,11 @@ function Home() {
                    : ""
                }`}
         >
+          <input
+            type="checkbox"
+            checked={selectedArticles.includes(item.id)}
+            onChange={() => handleToggleSelected(item.id)}
+          />
           <div className="tag">{fuzzyMatchEnum(item.site_label)}</div>
           <a href={item.url_input}>
             <h2>{item.name_input}</h2>
