@@ -58,7 +58,9 @@ function Home() {
   const filteredData = jsonData.filter((item) => {
     const includesSearchQuery = item.name_input
       .toLowerCase()
-      .includes(searchQuery.toLowerCase());
+      .includes(searchQuery.toLowerCase()) ||
+        item.auto_summary.toLowerCase().includes(searchQuery.toLowerCase())
+    ;
     if (readStatusFilter === "all") {
       return includesSearchQuery;
     } else if (readStatusFilter === "read") {
