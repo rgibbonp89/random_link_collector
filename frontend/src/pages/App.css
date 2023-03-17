@@ -233,6 +233,8 @@ textarea {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   resize: vertical; /* allow the user to resize vertically */
   height: 300px; /* set the initial height to 150 pixels */
+  font-family: Arial, Helvetica, sans-serif;
+
 }
 
 .search-bar {
