@@ -4,18 +4,22 @@ from openai import Completion
 import os
 
 MODEL_ENGINE = "gpt-3.5-turbo"
+MODEL_ENGINE_LARGE = "gpt-4"
 MAX_TOKENS = 500
 TEMPERATURE = 0.01
-
+MODEL_THRESHOLD = 3000
 load_dotenv()
 
 openai.api_key = os.environ.get("OPENAI_KEY")
 
 
 def call_model_endpoint(prompt: str, max_tokens: int = 500):
+    model = (
+        MODEL_ENGINE_LARGE if len(prompt.split()) > MODEL_THRESHOLD else MODEL_ENGINE
+    )
     try:
         completion: Completion = openai.ChatCompletion.create(
-            model=MODEL_ENGINE,
+            model=model,
             messages=[{"role": "user", "content": prompt}],
             n=1,
             max_tokens=max_tokens,

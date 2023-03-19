@@ -1,6 +1,5 @@
-import asyncio
 import json
-from typing import Dict, List, Generator, Any, Optional
+from typing import Dict, List, Generator, Any, Optional, Tuple, Callable
 from flask import Blueprint, request, Request
 from flask_cors import CORS
 from google.cloud.firestore_v1 import (
@@ -22,8 +21,11 @@ from backend.integrations.utils.utils import (
     AUTOSUMMARY_KEY_DB,
     URL_INPUT_KEY_DB,
     NAME_INPUT_KEY_DB,
+    NAME_LIST_KEY_DB,
+    SYNTHESIS_TITLE_KEY_DB,
+    SYNTHESIS_RENDER_MAPPER,
+    RENDER_MAPPER,
 )
-from backend.integrations.utils.utils import RENDER_MAPPER
 
 articles_blue = Blueprint("articlesblue", __name__)
 CORS(articles_blue)
@@ -34,10 +36,15 @@ UPDATE_AUTO_SUMMARY_KEY = "update_auto_summary"
 DOCUMENT_NAME_KEY = "Name"
 
 
-def _view_record(record: DocumentSnapshot) -> Dict[str, str]:
+def _view_record(
+    record: DocumentSnapshot,
+    render_mapper: Optional[Dict[str, Tuple[str, Callable]]] = None,
+) -> Dict[str, str]:
+    if render_mapper is None:
+        render_mapper = RENDER_MAPPER
     out = {}
     dict_record = record.to_dict()
-    for rendered_name, db_field_and_render_fn in RENDER_MAPPER.items():
+    for rendered_name, db_field_and_render_fn in render_mapper.items():
         out.update(
             {
                 f"{rendered_name}": db_field_and_render_fn[1](
@@ -49,11 +56,14 @@ def _view_record(record: DocumentSnapshot) -> Dict[str, str]:
     return out
 
 
-def _view_all_records() -> List[Dict[str, str]]:
+def _view_all_records(
+    render_mapper: Optional[Dict[str, Tuple[str, Callable]]] = None,
+    collection_name: str = "articles",
+) -> List[Dict[str, str]]:
     output_list = list()
-    _, _, _, list_in_first_tab = _make_db_connection()
+    _, _, _, list_in_first_tab = _make_db_connection(collection_name)
     for record in list_in_first_tab:
-        output_list.append(_view_record(record))
+        output_list.append(_view_record(record, render_mapper=render_mapper))
     return output_list
 
 
@@ -86,6 +96,13 @@ def _match_entries(request_dict, search_strictness):
 @articles_blue.route("/getallarticles", endpoint="getallarticles", methods=["GET"])
 def get_all_articles():
     return _view_all_records()
+
+
+@articles_blue.route("/getallsyntheses", endpoint="getallsyntheses", methods=["GET"])
+def get_all_syntheses():
+    return _view_all_records(
+        collection_name="syntheses", render_mapper=SYNTHESIS_RENDER_MAPPER
+    )
 
 
 @articles_blue.route("/deletearticle", endpoint="deletearticle", methods=["POST"])
@@ -124,7 +141,6 @@ def get_read_status():
 def create_synthesis():
     request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
     ids: Optional[List[str], None] = request_dict.get("ids")
-    topic: str = request_dict.get("topic")
     db, doc_ref, _, _ = _make_db_connection()
     out_content: Dict[str, List[str, str, str]] = dict()
     for id in ids:
@@ -140,19 +156,23 @@ def create_synthesis():
 
     synthesis_prompt = f"""Provide a synthesis of the following {len(ids)} texts.
     Focus on where they agree and differ, providing an overview of where
-    their authors stand on the topic of {topic}: \n"""
+    their authors stand on the topic.\n"""
     i = 1
     for id, text in out_content.items():
         synthesis_prompt += f" \n Article {i}: {text[0]}"
         i += 1
 
     model_synthesis = call_model_endpoint(synthesis_prompt)
+    title = call_model_endpoint(
+        f"Give a title to the following text: {model_synthesis}"
+    )
     doc_id = create_doc_id()
     doc_ref = db.collection(SYNTHESIS_COLLECTION).document(doc_id)
     doc_ref.set(
         {
             ID_LIST_KEY_DB: ids,
             SYNTHESIS_KEY_DB: model_synthesis,
+            SYNTHESIS_TITLE_KEY_DB: title,
             URL_LIST_KEY_DB: [value[1] for keys, value in out_content.items()],
             NAME_LIST_KEY_DB: [value[2] for keys, value in out_content.items()],
         }

@@ -22,8 +22,10 @@ SHORT_SUMMARY_KEY = "short_summary"
 SITE_LABEL_KEY = "site_label"
 READ_STATUS_KEY = "read_status"
 ID_LIST_KEY = "id_list"
+NAME_LIST_KEY = "name_list"
 SYNTHESIS_KEY = "synthesis"
 URL_LIST_KEY = "url_list"
+SYNTHESIS_TITLE_KEY = "synthesis_title"
 
 NAME_INPUT_KEY_DB = "Name"
 URL_INPUT_KEY_DB = "URL"
@@ -38,6 +40,8 @@ CLEANED_TEXT_KEY_DB = "CleanedText"
 ID_LIST_KEY_DB = "IDList"
 SYNTHESIS_KEY_DB = "Synthesis"
 URL_LIST_KEY_DB = "URLList"
+NAME_LIST_KEY_DB = "NameList"
+SYNTHESIS_TITLE_KEY_DB = "SynthesisTitle"
 
 COLLECTION_NAME = "articles"
 SYNTHESIS_COLLECTION = "syntheses"
@@ -71,6 +75,14 @@ RENDER_MAPPER: Dict[str, Tuple[str, Callable]] = {
     SHORT_SUMMARY_KEY: (SHORT_SUMMARY_KEY_DB, lambda x: x),
     SITE_LABEL_KEY: (SITE_LABEL_KEY_DB, lambda x: x),
     READ_STATUS_KEY: (READ_STATUS_KEY_DB, lambda x: x),
+}
+
+
+SYNTHESIS_RENDER_MAPPER: Dict[str, Tuple[str, Callable]] = {
+    SYNTHESIS_TITLE_KEY: (SYNTHESIS_TITLE_KEY_DB, lambda x: x),
+    NAME_LIST_KEY: (NAME_LIST_KEY_DB, lambda x: x),
+    SYNTHESIS_KEY: (SYNTHESIS_KEY_DB, lambda x: x),
+    URL_LIST_KEY: (URL_LIST_KEY_DB, lambda x: x),
 }
 
 
@@ -138,11 +150,11 @@ async def add_async_components_to_db(
     )
 
 
-def _make_db_connection():
+def _make_db_connection(collection_name: str = COLLECTION_NAME):
     db: Client = firestore.Client.from_service_account_json(
         f"{Path(__file__).parent.parent.parent.parent}/.keys/firebase.json"
     )
-    doc_ref: CollectionReference = db.collection(COLLECTION_NAME)
+    doc_ref: CollectionReference = db.collection(collection_name)
     docs: Generator[DocumentSnapshot] = doc_ref.stream()
     list_in_first_tab: List[DocumentSnapshot] = sorted(
         [doc for doc in docs], key=lambda x: x.create_time, reverse=True
