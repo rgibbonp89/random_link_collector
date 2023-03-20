@@ -11,6 +11,8 @@ function Home() {
   const [readStatusFilter, setReadStatusFilter] = useState("all");
   const [editArticle, setEditArticle] = useState([]);
   const [selectedArticles, setSelectedArticles] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const fetchData = () => {
     const queryParams = `?timestamp=${new Date().getTime()}`;
@@ -148,12 +150,17 @@ function Home() {
 
   const handleSynthesize = () => {
     console.log(selectedArticles);
+    setIsLoading(true);
     fetch("/createsynthesis", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids: selectedArticles }),
     })
       .then((response) => response.json())
+      .then(() => {
+        setIsLoading(false);
+        setIsSubmitted(true);
+      })
       .then((data) => {
         // do something with the data
       })
@@ -199,6 +206,8 @@ function Home() {
         >
           Synthesize
         </button>
+        {isLoading && <p>Loading...</p>}
+        {isSubmitted && <p>Synthesis submitted successfully!</p>}
       </div>
       {currentPageData.map((item) => (
         <div

@@ -156,10 +156,10 @@ def create_synthesis():
 
     synthesis_prompt = f"""Provide a synthesis of the following {len(ids)} texts.
     Focus on where they agree and differ, providing an overview of where
-    their authors stand on the topic.\n"""
+    their authors stand on the topic. Please provide your answers in markdown bullet points. \n"""
     i = 1
     for id, text in out_content.items():
-        synthesis_prompt += f" \n Article {i}: {text[0]}"
+        synthesis_prompt += f" \n {text[2]}: {text[0]}"
         i += 1
 
     model_synthesis = call_model_endpoint(synthesis_prompt)

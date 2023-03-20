@@ -242,3 +242,53 @@ textarea {
   top: 75px;
   left: 10px;
 }
+
+.card {
+  position: relative;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  padding: 10px;
+  font-size: 14px;
+  text-align: left;
+  width: 95%;
+  background-color: #70d0d4;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  font-family: "PT Sans", Calibri, Tahoma, sans-serif;
+  flex-basis: 50%;
+}
+
+.card__header {
+  background-color: #282c34;
+  max-height: 10vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+  overflow: auto;
+  min-width: 50%;
+}
+
+.card__body {
+  display: flex;
+  position: relative;
+  top: 50px;
+  left: 0;
+  height: 400px;
+  background-color: #ccc;
+  width: fit-content;
+  margin-top: 100px;
+}
+
+
+.card__tag {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
+}
