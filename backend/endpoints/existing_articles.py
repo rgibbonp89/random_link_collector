@@ -1,3 +1,4 @@
+import logging
 import json
 from typing import Dict, List, Generator, Any, Optional, Tuple, Callable
 from flask import Blueprint, request, Request
@@ -7,7 +8,7 @@ from google.cloud.firestore_v1 import (
     DocumentReference,
 )
 from fuzzywuzzy import fuzz
-from backend.integrations.model_enpoint import call_model_endpoint
+from backend.integrations.model_enpoint import call_model_endpoint, MODEL_ENGINE_LARGE
 from backend.integrations.utils.utils import (
     add_synchronous_components_to_db,
     NAME_INPUT_KEY,
@@ -25,6 +26,7 @@ from backend.integrations.utils.utils import (
     SYNTHESIS_TITLE_KEY_DB,
     SYNTHESIS_RENDER_MAPPER,
     RENDER_MAPPER,
+    EXPLAINED_CONTENT_KEY,
 )
 
 articles_blue = Blueprint("articlesblue", __name__)
@@ -34,6 +36,8 @@ SEARCH_STRICTNESS_CONSTANT = 95
 SEARCH_STRICTNESS_KEY = "search_strictness"
 UPDATE_AUTO_SUMMARY_KEY = "update_auto_summary"
 DOCUMENT_NAME_KEY = "Name"
+
+logger = logging.getLogger(__name__)
 
 
 def _view_record(
@@ -135,6 +139,31 @@ def get_read_status():
     db, doc_ref, _, _ = _make_db_connection()
     doc: DocumentReference = doc_ref.document(request_dict.get("id"))
     return {"read_status": doc.get().to_dict().get("ReadStatus")}
+
+
+@articles_blue.route(
+    "/explainercontent", endpoint="/explainercontent", methods=["POST"]
+)
+def explainer_content():
+    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
+    doc_id: str = request_dict.get("id")
+    db, doc_ref, _, _ = _make_db_connection()
+    logger.warn(f"Request dict: {request_dict}")
+    prompt = f"""Can you provide answers to the following questions
+    or clarify the meaning of the following terms? \n: {request_dict.get("explained_content")} \n"""
+    explained_content = call_model_endpoint(prompt, model=MODEL_ENGINE_LARGE)
+    request_dict.pop(EXPLAINED_CONTENT_KEY)
+    request_dict.pop("id")
+    request_dict.update({EXPLAINED_CONTENT_KEY: prompt + explained_content})
+    logger.warn(f"Request dict: {request_dict}")
+    logger.warn(f"Render mapper: {RENDER_MAPPER}")
+    db_insert_dict = {
+        RENDER_MAPPER.get(key)[0]: value for key, value in request_dict.items()
+    }
+    add_synchronous_components_to_db(
+        db, COLLECTION_NAME, doc_id=doc_id, db_insert_dict=db_insert_dict
+    )
+    return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
 
 
 @articles_blue.route("/createsynthesis", endpoint="/createsynthesis", methods=["POST"])

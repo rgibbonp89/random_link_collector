@@ -61,7 +61,8 @@ function Home() {
   const filteredData = jsonData.filter((item) => {
     const includesSearchQuery =
       item.name_input.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.auto_summary.toLowerCase().includes(searchQuery.toLowerCase());
+      item.auto_summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.site_label.toLowerCase().includes(searchQuery.toLowerCase());
     if (readStatusFilter === "all") {
       return includesSearchQuery;
     } else if (readStatusFilter === "read") {
@@ -138,6 +139,27 @@ function Home() {
           )
         );
       });
+    if (event.target.elements.explainedContent.value) {
+      console.log(item.id);
+      console.log(event.target.elements.explainedContent.value);
+      const explainer = {
+        id: item.id,
+        explained_content: event.target.elements.explainedContent.value,
+      };
+      fetch(`/explainercontent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(explainer),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          setJsonData((prevData) =>
+            prevData.map((d) =>
+              d.id === item.id ? { ...d, ...explainer } : d
+            )
+          );
+        });
+    }
   };
 
   const handleToggleSelected = (articleId) => {
@@ -288,7 +310,14 @@ function Home() {
                 defaultValue={item.my_summary}
                 style={{ padding: "10px", marginBottom: "10px" }}
               />
-              <button type="submit">Save</button>
+              <textarea
+                className={"textarea"}
+                type="text"
+                name="explainedContent"
+                defaultValue={item.explained_content}
+                style={{ padding: "10px", marginBottom: "10px" }}
+              />
+              <button className={'button'} type="submit">Save</button>
             </form>
           )}
           {!minimizedBoxes.includes(item.name_input) && (
@@ -297,6 +326,8 @@ function Home() {
               <ReactMarkdown>{item.auto_summary}</ReactMarkdown>
               <p className="subheader"> My summary:</p>
               <ReactMarkdown>{item.my_summary}</ReactMarkdown>
+              <p className="subheader"> Explained content:</p>
+              <ReactMarkdown>{item.explained_content}</ReactMarkdown>
             </>
           )}
         </div>

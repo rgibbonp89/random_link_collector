@@ -26,6 +26,7 @@ NAME_LIST_KEY = "name_list"
 SYNTHESIS_KEY = "synthesis"
 URL_LIST_KEY = "url_list"
 SYNTHESIS_TITLE_KEY = "synthesis_title"
+EXPLAINED_CONTENT_KEY = "explained_content"
 
 NAME_INPUT_KEY_DB = "Name"
 URL_INPUT_KEY_DB = "URL"
@@ -42,6 +43,7 @@ SYNTHESIS_KEY_DB = "Synthesis"
 URL_LIST_KEY_DB = "URLList"
 NAME_LIST_KEY_DB = "NameList"
 SYNTHESIS_TITLE_KEY_DB = "SynthesisTitle"
+EXPLAINED_CONTENT_KEY_DB = "ExplainedContent"
 
 COLLECTION_NAME = "articles"
 SYNTHESIS_COLLECTION = "syntheses"
@@ -75,6 +77,7 @@ RENDER_MAPPER: Dict[str, Tuple[str, Callable]] = {
     SHORT_SUMMARY_KEY: (SHORT_SUMMARY_KEY_DB, lambda x: x),
     SITE_LABEL_KEY: (SITE_LABEL_KEY_DB, lambda x: x),
     READ_STATUS_KEY: (READ_STATUS_KEY_DB, lambda x: x),
+    EXPLAINED_CONTENT_KEY: (EXPLAINED_CONTENT_KEY_DB, lambda x: x),
 }
 
 

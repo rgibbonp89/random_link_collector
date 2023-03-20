@@ -1,3 +1,5 @@
+from typing import Optional
+
 import openai
 from dotenv import load_dotenv
 from openai import Completion
@@ -13,10 +15,17 @@ load_dotenv()
 openai.api_key = os.environ.get("OPENAI_KEY")
 
 
-def call_model_endpoint(prompt: str, max_tokens: int = 500):
-    model = (
-        MODEL_ENGINE_LARGE if len(prompt.split()) > MODEL_THRESHOLD else MODEL_ENGINE
-    )
+def call_model_endpoint(
+    prompt: str,
+    model: Optional[str] = None,
+    max_tokens: int = 500,
+):
+    if not model:
+        model = (
+            MODEL_ENGINE_LARGE
+            if len(prompt.split()) > MODEL_THRESHOLD
+            else MODEL_ENGINE
+        )
     try:
         completion: Completion = openai.ChatCompletion.create(
             model=model,
