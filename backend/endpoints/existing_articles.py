@@ -12,7 +12,7 @@ from backend.integrations.model_enpoint import call_model_endpoint, MODEL_ENGINE
 from backend.integrations.utils.utils import (
     add_synchronous_components_to_db,
     NAME_INPUT_KEY,
-    COLLECTION_NAME,
+    ARTICLES_COLLECTION,
     _make_db_connection,
     SYNTHESIS_COLLECTION,
     create_doc_id,
@@ -27,6 +27,7 @@ from backend.integrations.utils.utils import (
     SYNTHESIS_RENDER_MAPPER,
     RENDER_MAPPER,
     EXPLAINED_CONTENT_KEY,
+    EXPLAINED_CONTENT_KEY_DB,
 )
 
 articles_blue = Blueprint("articlesblue", __name__)
@@ -128,7 +129,7 @@ def update_article_flow():
         RENDER_MAPPER.get(key)[0]: value for key, value in request_dict.items()
     }
     add_synchronous_components_to_db(
-        db, COLLECTION_NAME, doc_id=doc_id, db_insert_dict=db_insert_dict
+        db, ARTICLES_COLLECTION, doc_id=doc_id, db_insert_dict=db_insert_dict
     )
     return request_dict
 
@@ -149,19 +150,35 @@ def explainer_content():
     doc_id: str = request_dict.get("id")
     db, doc_ref, _, _ = _make_db_connection()
     logger.warn(f"Request dict: {request_dict}")
-    prompt = f"""Can you provide answers to the following questions
-    or clarify the meaning of the following terms? \n: {request_dict.get("explained_content")} \n"""
+    prompt = f"""{request_dict.get(EXPLAINED_CONTENT_KEY)}"""
+    current_explained_content: str = (
+        db.collection(ARTICLES_COLLECTION)
+        .document(doc_id)
+        .get()
+        .to_dict()
+        .get(EXPLAINED_CONTENT_KEY_DB)
+    )
+    if current_explained_content:
+        prompt = prompt.split(current_explained_content)[1]
+    else:
+        current_explained_content = ""
     explained_content = call_model_endpoint(prompt, model=MODEL_ENGINE_LARGE)
-    request_dict.pop(EXPLAINED_CONTENT_KEY)
     request_dict.pop("id")
-    request_dict.update({EXPLAINED_CONTENT_KEY: prompt + explained_content})
+    request_dict.update(
+        {
+            EXPLAINED_CONTENT_KEY: current_explained_content
+            + "\n"
+            + prompt
+            + "\n"
+            + explained_content
+        }
+    )
     logger.warn(f"Request dict: {request_dict}")
-    logger.warn(f"Render mapper: {RENDER_MAPPER}")
     db_insert_dict = {
         RENDER_MAPPER.get(key)[0]: value for key, value in request_dict.items()
     }
     add_synchronous_components_to_db(
-        db, COLLECTION_NAME, doc_id=doc_id, db_insert_dict=db_insert_dict
+        db, ARTICLES_COLLECTION, doc_id=doc_id, db_insert_dict=db_insert_dict
     )
     return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
 

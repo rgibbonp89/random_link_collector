@@ -45,7 +45,7 @@ NAME_LIST_KEY_DB = "NameList"
 SYNTHESIS_TITLE_KEY_DB = "SynthesisTitle"
 EXPLAINED_CONTENT_KEY_DB = "ExplainedContent"
 
-COLLECTION_NAME = "articles"
+ARTICLES_COLLECTION = "articles"
 SYNTHESIS_COLLECTION = "syntheses"
 
 
@@ -153,7 +153,7 @@ async def add_async_components_to_db(
     )
 
 
-def _make_db_connection(collection_name: str = COLLECTION_NAME):
+def _make_db_connection(collection_name: str = ARTICLES_COLLECTION):
     db: Client = firestore.Client.from_service_account_json(
         f"{Path(__file__).parent.parent.parent.parent}/.keys/firebase.json"
     )
