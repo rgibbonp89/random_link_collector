@@ -10,6 +10,7 @@ from readability import Document
 
 from backend.integrations.logins.config_enums import (
     parse_article_url_for_correct_login_flow,
+    SiteAuthenticator,
 )
 from backend.integrations.logins.login_configs.base_login_config import SiteConfig
 from backend.integrations.logins.login_configs.utils import (
@@ -50,9 +51,13 @@ def authentication_and_parse_flow(
     return re.sub(CLEANR, "", Document(article_text.text).summary())
 
 
-def authenticate_news_site_and_return_cleaned_content(service, article_url) -> str:
+def authenticate_news_site_and_return_cleaned_content(
+    service, article_url
+) -> Union[str, None]:
     today = date.today()
     window = today - timedelta(days=1)
+    if "ft.com" in article_url:
+        return None
     try:
         config_object: Union[
             Type[SiteConfig], None
