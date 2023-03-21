@@ -13,6 +13,7 @@ function Home() {
   const [selectedArticles, setSelectedArticles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [explainArticle, setArticleToBeExplained] = useState([]);
 
   const fetchData = () => {
     const queryParams = `?timestamp=${new Date().getTime()}`;
@@ -138,28 +139,31 @@ function Home() {
             d.id === item.id ? { ...d, ...updatedArticle } : d
           )
         );
-      });
-    if (event.target.elements.explainedContent.value) {
-      console.log(item.id);
-      console.log(event.target.elements.explainedContent.value);
-      const explainer = {
-        id: item.id,
-        explained_content: event.target.elements.explainedContent.value,
-      };
-      fetch(`/explainercontent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(explainer),
       })
-        .then((response) => response.json())
-        .then((data) => {
-          setJsonData((prevData) =>
-            prevData.map((d) =>
-              d.id === item.id ? { ...d, ...explainer } : d
-            )
-          );
-        });
-    }
+      .catch((error) => console.error(error));
+  };
+  const handleExplainArticle = (event, item) => {
+    setIsLoading(true);
+    const explainer = {
+      id: item.id,
+      explained_content: event.target.elements.explainedContent.value,
+    };
+    fetch(`/explainercontent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(explainer),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        setJsonData((prevData) =>
+          prevData.map((d) => (d.id === item.id ? { ...d, ...explainer } : d))
+        );
+      })
+      .then(() => {
+        setIsLoading(false);
+        setIsSubmitted(true);
+      })
+      .catch((error) => console.error(error));
   };
 
   const handleToggleSelected = (articleId) => {
@@ -266,7 +270,6 @@ function Home() {
           >
             Delete
           </button>
-
           {editArticle !== item && (
             <button
               className={"button"}
@@ -310,6 +313,33 @@ function Home() {
                 defaultValue={item.my_summary}
                 style={{ padding: "10px", marginBottom: "10px" }}
               />
+              <button className={"button"} type="submit">
+                Save
+              </button>
+              <button
+                className={"button"}
+                type="button"
+                onClick={() => setEditArticle(null)}
+              >
+                Cancel
+              </button>
+            </form>
+          )}
+          {explainArticle !== item && (
+            <button
+              className={"button"}
+              onClick={() => setArticleToBeExplained(item)}
+              style={{
+                display: minimizedBoxes.includes(item.name_input)
+                  ? "none"
+                  : "block",
+              }}
+            >
+              Explain
+            </button>
+          )}
+          {explainArticle === item && (
+            <form onSubmit={(event) => handleExplainArticle(event, item)}>
               <textarea
                 className={"textarea"}
                 type="text"
@@ -317,7 +347,18 @@ function Home() {
                 defaultValue={item.explained_content}
                 style={{ padding: "10px", marginBottom: "10px" }}
               />
-              <button className={'button'} type="submit">Save</button>
+              <button className={"button"} type="submit">
+                Submit
+              </button>
+              {isLoading && <p>Loading...</p>}
+              {isSubmitted && <p>Explanation created successfully!</p>}
+              <button
+                className={"button"}
+                type="button"
+                onClick={() => setEditArticle(null)}
+              >
+                Cancel
+              </button>
             </form>
           )}
           {!minimizedBoxes.includes(item.name_input) && (

@@ -45,9 +45,8 @@ function Syntheses() {
   };
 
   return (
-    <div className="App">
-      <header className="App"></header>
-      <div>
+    <div className="App" style={{ paddingBottom: "60px" }}>
+      <header className="App">
         <input
           className={"search-bar"}
           type="text"
@@ -55,10 +54,11 @@ function Syntheses() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-      </div>
+      </header>
+      <div></div>
       {[...Array(numRows)].map((_, rowIndex) => {
         return (
-          <div>
+          <div className="App-content">
             {currentPageData
               .slice(rowIndex * cardsPerRow, (rowIndex + 1) * cardsPerRow)
               .map((item) => (
@@ -67,6 +67,7 @@ function Syntheses() {
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
+                    paddingTop: "60px",
                   }}
                 >
                   <div className={"box"} key={item.id}>
