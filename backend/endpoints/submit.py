@@ -4,6 +4,7 @@ import json
 
 from flask import Blueprint
 from flask_cors import CORS
+from googleapiclient.discovery import Resource
 
 from backend.integrations.authenticate import (
     authenticate_user_and_provide_gmail_service,
@@ -17,6 +18,6 @@ CORS(submit_blue)
 
 @submit_blue.route("/submit", endpoint="submit", methods=["POST"])
 def submit_article():
-    service = authenticate_user_and_provide_gmail_service()
+    service: Resource = authenticate_user_and_provide_gmail_service()
     _submit_article(service)
     return json.dumps({"success": True}), 200, {"ContentType": "application/json"}

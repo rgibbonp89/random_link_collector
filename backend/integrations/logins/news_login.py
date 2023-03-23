@@ -1,16 +1,15 @@
+import logging
 import pickle
 import re
 from datetime import date, timedelta
 
 from typing import Type, Optional, Union
 
-import requests
 from googleapiclient.discovery import Resource
 from readability import Document
 
 from backend.integrations.logins.config_enums import (
     parse_article_url_for_correct_login_flow,
-    SiteAuthenticator,
 )
 from backend.integrations.logins.login_configs.base_login_config import SiteConfig
 from backend.integrations.logins.login_configs.utils import (
@@ -19,8 +18,13 @@ from backend.integrations.logins.login_configs.utils import (
     doc_ref,
 )
 
+import requests, PyPDF2
+from io import BytesIO
+
 
 CLEANR = re.compile("<.*?>")
+
+logger = logging.getLogger(__name__)
 
 
 def authentication_and_parse_flow(
@@ -51,13 +55,28 @@ def authentication_and_parse_flow(
     return re.sub(CLEANR, "", Document(article_text.text).summary())
 
 
+def extract_content_from_pdf_url(url: str) -> str:
+    response = requests.get(url)
+    my_raw_data = response.content
+    with BytesIO(my_raw_data) as data:
+        read_pdf = PyPDF2.PdfReader(data)
+        article_content = ""
+        for page in range(len(read_pdf.pages)):
+            page_text = read_pdf.pages[page].extract_text()
+            logger.warn(page_text)
+            article_content += page_text
+    return article_content
+
+
 def authenticate_news_site_and_return_cleaned_content(
-    service, article_url
+    service: Resource, article_url: str
 ) -> Union[str, None]:
     today = date.today()
     window = today - timedelta(days=1)
     if "ft.com" in article_url:
         return None
+    if article_url.endswith(".pdf"):
+        return extract_content_from_pdf_url(article_url)
     try:
         config_object: Union[
             Type[SiteConfig], None
