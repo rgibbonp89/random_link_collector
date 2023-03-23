@@ -76,6 +76,13 @@ function DailyNotes() {
     setPage(selectedPage.selected);
   };
 
+  const createNewDailyNote = () => {
+    const queryParams = `?timestamp=${new Date().getTime()}`;
+    fetch(`/createnewdailynote${queryParams}`)
+      .then((response) => response.json())
+      .catch((error) => console.error(error));
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -89,6 +96,11 @@ function DailyNotes() {
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
       />
+      <button
+          className={'button'}
+          style={{marginLeft:50}}
+          onClick={() => createNewDailyNote()}
+      >Create new daily note</button>
       {currentPageData.map((item) => (
         <div
           key={item.date_input}

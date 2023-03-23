@@ -1,3 +1,4 @@
+import datetime
 import logging
 import re
 import json
@@ -34,6 +35,7 @@ from backend.integrations.utils.utils import (
     DAILY_NOTES_COLLECTION,
     DAILY_NOTE_TEXT_KEY,
     DAILY_NOTE_TEXT_KEY_DB,
+    DATE_INPUT_KEY_DB,
 )
 
 articles_blue = Blueprint("articlesblue", __name__)
@@ -252,7 +254,6 @@ def update_daily_note():
     logger.warn(f"Current daily note: {current_daily_note_text}")
     logger.warn(f"Daily note addition: {daily_note_addition}")
     if current_daily_note_text:
-
         daily_note_addition = daily_note_addition.split(current_daily_note_text)
         logger.warn(f"Split: {daily_note_addition}")
         daily_note_addition = daily_note_addition[1]
@@ -278,4 +279,23 @@ def update_daily_note():
     add_synchronous_components_to_db(
         db, DAILY_NOTES_COLLECTION, doc_id=doc_id, db_insert_dict=db_insert_dict
     )
+    return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
+
+
+@articles_blue.route(
+    "/createnewdailynote", endpoint="/createnewdailynote", methods=["GET"]
+)
+def create_new_daily_note():
+    db, doc_ref, _, list_refs = _make_db_connection(
+        collection_name=DAILY_NOTES_COLLECTION
+    )
+    logger.warn(list_refs)
+    today_date = datetime.datetime.today().date().strftime("%Y/%m/%d")
+    last_date_db = list_refs[0].to_dict().get(DATE_INPUT_KEY_DB)
+    logger.warn(last_date_db)
+    logger.warn(today_date)
+    if today_date != last_date_db:
+        add_synchronous_components_to_db(
+            db, DAILY_NOTES_COLLECTION, db_insert_dict={DATE_INPUT_KEY_DB: today_date}
+        )
     return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
