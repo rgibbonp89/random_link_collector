@@ -28,6 +28,7 @@ from backend.integrations.utils.utils import (
     RENDER_MAPPER,
     EXPLAINED_CONTENT_KEY,
     EXPLAINED_CONTENT_KEY_DB,
+    CLEANED_TEXT_KEY_DB,
 )
 
 articles_blue = Blueprint("articlesblue", __name__)
@@ -151,18 +152,17 @@ def explainer_content():
     db, doc_ref, _, _ = _make_db_connection()
     logger.warn(f"Request dict: {request_dict}")
     prompt = f"""{request_dict.get(EXPLAINED_CONTENT_KEY)}"""
-    current_explained_content: str = (
-        db.collection(ARTICLES_COLLECTION)
-        .document(doc_id)
-        .get()
-        .to_dict()
-        .get(EXPLAINED_CONTENT_KEY_DB)
+    article_doc: Dict[str, str] = (
+        db.collection(ARTICLES_COLLECTION).document(doc_id).get().to_dict()
     )
+    current_explained_content: str = article_doc.get(EXPLAINED_CONTENT_KEY_DB)
     if current_explained_content:
         prompt = prompt.split(current_explained_content)[1]
     else:
         current_explained_content = ""
-    explained_content = call_model_endpoint(prompt, model=MODEL_ENGINE_LARGE)
+    prompt_to_model = prompt.replace("${article}", article_doc.get(CLEANED_TEXT_KEY_DB))
+    logger.warn(f"Prompt to model: {prompt_to_model}")
+    explained_content = call_model_endpoint(prompt_to_model, model=MODEL_ENGINE_LARGE)
     request_dict.pop("id")
     request_dict.update(
         {
