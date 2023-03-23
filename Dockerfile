@@ -19,4 +19,4 @@ RUN pip install -r requirements.txt
 
 EXPOSE 8080
 
-CMD ["gunicorn", "-b", ":8080", "backend.app:app"]
+CMD ["gunicorn", "-b", ":8080", "backend.app:app", "--timeout", "150"]

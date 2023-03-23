@@ -1,6 +1,6 @@
-import asyncio
+import logging
 import json
-from typing import Dict, List, Generator, Any
+from typing import Dict, List, Generator, Any, Optional, Tuple, Callable
 from flask import Blueprint, request, Request
 from flask_cors import CORS
 from google.cloud.firestore_v1 import (
@@ -8,19 +8,28 @@ from google.cloud.firestore_v1 import (
     DocumentReference,
 )
 from fuzzywuzzy import fuzz
-from backend.integrations.model_enpoint import call_model_endpoint
+from backend.integrations.model_enpoint import call_model_endpoint, MODEL_ENGINE_LARGE
 from backend.integrations.utils.utils import (
-    add_async_components_to_db,
     add_synchronous_components_to_db,
-    _validate_request_for_update_article,
-    _validate_request_for_update_article_sync_db,
     NAME_INPUT_KEY,
-    URL_INPUT_KEY,
-    AUTOSUMMARY_PROMPT_KEY,
-    COLLECTION_NAME,
+    ARTICLES_COLLECTION,
     _make_db_connection,
+    SYNTHESIS_COLLECTION,
+    create_doc_id,
+    ID_LIST_KEY_DB,
+    SYNTHESIS_KEY_DB,
+    URL_LIST_KEY_DB,
+    AUTOSUMMARY_KEY_DB,
+    URL_INPUT_KEY_DB,
+    NAME_INPUT_KEY_DB,
+    NAME_LIST_KEY_DB,
+    SYNTHESIS_TITLE_KEY_DB,
+    SYNTHESIS_RENDER_MAPPER,
+    RENDER_MAPPER,
+    EXPLAINED_CONTENT_KEY,
+    EXPLAINED_CONTENT_KEY_DB,
+    CLEANED_TEXT_KEY_DB,
 )
-from backend.integrations.utils.utils import RENDER_MAPPER
 
 articles_blue = Blueprint("articlesblue", __name__)
 CORS(articles_blue)
@@ -30,11 +39,18 @@ SEARCH_STRICTNESS_KEY = "search_strictness"
 UPDATE_AUTO_SUMMARY_KEY = "update_auto_summary"
 DOCUMENT_NAME_KEY = "Name"
 
+logger = logging.getLogger(__name__)
 
-def _view_record(record: DocumentSnapshot) -> Dict[str, str]:
+
+def _view_record(
+    record: DocumentSnapshot,
+    render_mapper: Optional[Dict[str, Tuple[str, Callable]]] = None,
+) -> Dict[str, str]:
+    if render_mapper is None:
+        render_mapper = RENDER_MAPPER
     out = {}
     dict_record = record.to_dict()
-    for rendered_name, db_field_and_render_fn in RENDER_MAPPER.items():
+    for rendered_name, db_field_and_render_fn in render_mapper.items():
         out.update(
             {
                 f"{rendered_name}": db_field_and_render_fn[1](
@@ -46,11 +62,14 @@ def _view_record(record: DocumentSnapshot) -> Dict[str, str]:
     return out
 
 
-def _view_all_records() -> List[Dict[str, str]]:
+def _view_all_records(
+    render_mapper: Optional[Dict[str, Tuple[str, Callable]]] = None,
+    collection_name: str = "articles",
+) -> List[Dict[str, str]]:
     output_list = list()
-    _, _, _, list_in_first_tab = _make_db_connection()
+    _, _, _, list_in_first_tab = _make_db_connection(collection_name)
     for record in list_in_first_tab:
-        output_list.append(_view_record(record))
+        output_list.append(_view_record(record, render_mapper=render_mapper))
     return output_list
 
 
@@ -85,6 +104,13 @@ def get_all_articles():
     return _view_all_records()
 
 
+@articles_blue.route("/getallsyntheses", endpoint="getallsyntheses", methods=["GET"])
+def get_all_syntheses():
+    return _view_all_records(
+        collection_name="syntheses", render_mapper=SYNTHESIS_RENDER_MAPPER
+    )
+
+
 @articles_blue.route("/deletearticle", endpoint="deletearticle", methods=["POST"])
 def delete_single_article():
     request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
@@ -104,7 +130,7 @@ def update_article_flow():
         RENDER_MAPPER.get(key)[0]: value for key, value in request_dict.items()
     }
     add_synchronous_components_to_db(
-        db, COLLECTION_NAME, doc_id=doc_id, db_insert_dict=db_insert_dict
+        db, ARTICLES_COLLECTION, doc_id=doc_id, db_insert_dict=db_insert_dict
     )
     return request_dict
 
@@ -115,3 +141,86 @@ def get_read_status():
     db, doc_ref, _, _ = _make_db_connection()
     doc: DocumentReference = doc_ref.document(request_dict.get("id"))
     return {"read_status": doc.get().to_dict().get("ReadStatus")}
+
+
+@articles_blue.route(
+    "/explainercontent", endpoint="/explainercontent", methods=["POST"]
+)
+def explainer_content():
+    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
+    doc_id: str = request_dict.get("id")
+    db, doc_ref, _, _ = _make_db_connection()
+    logger.warn(f"Request dict: {request_dict}")
+    prompt = f"""{request_dict.get(EXPLAINED_CONTENT_KEY)}"""
+    article_doc: Dict[str, str] = (
+        db.collection(ARTICLES_COLLECTION).document(doc_id).get().to_dict()
+    )
+    current_explained_content: str = article_doc.get(EXPLAINED_CONTENT_KEY_DB)
+    if current_explained_content:
+        prompt = prompt.split(current_explained_content)[1]
+    else:
+        current_explained_content = ""
+    prompt_to_model = prompt.replace("${article}", article_doc.get(CLEANED_TEXT_KEY_DB))
+    logger.warn(f"Prompt to model: {prompt_to_model}")
+    explained_content = call_model_endpoint(prompt_to_model, model=MODEL_ENGINE_LARGE)
+    request_dict.pop("id")
+    request_dict.update(
+        {
+            EXPLAINED_CONTENT_KEY: current_explained_content
+            + "\n"
+            + prompt
+            + "\n"
+            + explained_content
+        }
+    )
+    logger.warn(f"Request dict: {request_dict}")
+    db_insert_dict = {
+        RENDER_MAPPER.get(key)[0]: value for key, value in request_dict.items()
+    }
+    add_synchronous_components_to_db(
+        db, ARTICLES_COLLECTION, doc_id=doc_id, db_insert_dict=db_insert_dict
+    )
+    return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
+
+
+@articles_blue.route("/createsynthesis", endpoint="/createsynthesis", methods=["POST"])
+def create_synthesis():
+    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
+    ids: Optional[List[str], None] = request_dict.get("ids")
+    db, doc_ref, _, _ = _make_db_connection()
+    out_content: Dict[str, List[str, str, str]] = dict()
+    for id in ids:
+        out_content.update(
+            {
+                id: [
+                    doc_ref.document(id).get().to_dict().get(AUTOSUMMARY_KEY_DB),
+                    doc_ref.document(id).get().to_dict().get(URL_INPUT_KEY_DB),
+                    doc_ref.document(id).get().to_dict().get(NAME_INPUT_KEY_DB),
+                ]
+            }
+        )
+
+    synthesis_prompt = f"""Provide a synthesis of the following {len(ids)} texts.
+    Focus on where they agree and differ, providing an overview of where
+    their authors stand on the topic. Please provide your answers in markdown bullet points. \n"""
+    i = 1
+    for id, text in out_content.items():
+        synthesis_prompt += f" \n {text[2]}: {text[0]}"
+        i += 1
+
+    model_synthesis = call_model_endpoint(synthesis_prompt)
+    title = call_model_endpoint(
+        f"Give a title to the following text: {model_synthesis}"
+    )
+    doc_id = create_doc_id()
+    doc_ref = db.collection(SYNTHESIS_COLLECTION).document(doc_id)
+    doc_ref.set(
+        {
+            ID_LIST_KEY_DB: ids,
+            SYNTHESIS_KEY_DB: model_synthesis,
+            SYNTHESIS_TITLE_KEY_DB: title,
+            URL_LIST_KEY_DB: [value[1] for keys, value in out_content.items()],
+            NAME_LIST_KEY_DB: [value[2] for keys, value in out_content.items()],
+        }
+    )
+    return json.dumps({"success": True}), 200, {"ContentType": "application/json"}

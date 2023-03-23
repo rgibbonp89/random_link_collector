@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./Layout";
 import Home from "./pages/Home";
 import Submit from "./pages/Submit";
+import Syntheses from "./pages/Syntheses";
 
 
 export default function App() {
@@ -12,6 +13,7 @@ export default function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
             <Route path="submit" element={<Submit />} />
+            <Route path="syntheses" element={<Syntheses />} />
         </Route>
       </Routes>
     </BrowserRouter>

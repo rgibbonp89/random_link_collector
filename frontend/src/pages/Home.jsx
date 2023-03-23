@@ -10,6 +10,10 @@ function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [readStatusFilter, setReadStatusFilter] = useState("all");
   const [editArticle, setEditArticle] = useState([]);
+  const [selectedArticles, setSelectedArticles] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [explainArticle, setArticleToBeExplained] = useState([]);
 
   const fetchData = () => {
     const queryParams = `?timestamp=${new Date().getTime()}`;
@@ -56,11 +60,10 @@ function Home() {
   const offset = page * itemsPerPage;
 
   const filteredData = jsonData.filter((item) => {
-    const includesSearchQuery = item.name_input
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase()) ||
-        item.auto_summary.toLowerCase().includes(searchQuery.toLowerCase())
-    ;
+    const includesSearchQuery =
+      item.name_input.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.auto_summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.site_label.toLowerCase().includes(searchQuery.toLowerCase());
     if (readStatusFilter === "all") {
       return includesSearchQuery;
     } else if (readStatusFilter === "read") {
@@ -136,7 +139,58 @@ function Home() {
             d.id === item.id ? { ...d, ...updatedArticle } : d
           )
         );
-      });
+      })
+      .catch((error) => console.error(error));
+  };
+  const handleExplainArticle = (event, item) => {
+    setIsLoading(true);
+    const explainer = {
+      id: item.id,
+      explained_content: event.target.elements.explainedContent.value,
+    };
+    fetch(`/explainercontent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(explainer),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        setJsonData((prevData) =>
+          prevData.map((d) => (d.id === item.id ? { ...d, ...explainer } : d))
+        );
+      })
+      .then(() => {
+        setIsLoading(false);
+        setIsSubmitted(true);
+      })
+      .catch((error) => console.error(error));
+  };
+
+  const handleToggleSelected = (articleId) => {
+    if (selectedArticles.includes(articleId)) {
+      setSelectedArticles(selectedArticles.filter((id) => id !== articleId));
+    } else {
+      setSelectedArticles([...selectedArticles, articleId]);
+    }
+  };
+
+  const handleSynthesize = () => {
+    console.log(selectedArticles);
+    setIsLoading(true);
+    fetch("/createsynthesis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: selectedArticles }),
+    })
+      .then((response) => response.json())
+      .then(() => {
+        setIsLoading(false);
+        setIsSubmitted(true);
+      })
+      .then((data) => {
+        // do something with the data
+      })
+      .catch((error) => console.error(error));
   };
 
   return (
@@ -171,6 +225,15 @@ function Home() {
         >
           Unread
         </button>
+        <button
+          className={"button"}
+          onClick={handleSynthesize}
+          disabled={selectedArticles.length === 0}
+        >
+          Synthesize
+        </button>
+        {isLoading && <p>Loading...</p>}
+        {isSubmitted && <p>Synthesis submitted successfully!</p>}
       </div>
       {currentPageData.map((item) => (
         <div
@@ -182,6 +245,11 @@ function Home() {
                    : ""
                }`}
         >
+          <input
+            type="checkbox"
+            checked={selectedArticles.includes(item.id)}
+            onChange={() => handleToggleSelected(item.id)}
+          />
           <div className="tag">{fuzzyMatchEnum(item.site_label)}</div>
           <a href={item.url_input}>
             <h2>{item.name_input}</h2>
@@ -202,7 +270,6 @@ function Home() {
           >
             Delete
           </button>
-
           {editArticle !== item && (
             <button
               className={"button"}
@@ -246,7 +313,52 @@ function Home() {
                 defaultValue={item.my_summary}
                 style={{ padding: "10px", marginBottom: "10px" }}
               />
-              <button type="submit">Save</button>
+              <button className={"button"} type="submit">
+                Save
+              </button>
+              <button
+                className={"button"}
+                type="button"
+                onClick={() => setEditArticle(null)}
+              >
+                Cancel
+              </button>
+            </form>
+          )}
+          {explainArticle !== item && (
+            <button
+              className={"button"}
+              onClick={() => setArticleToBeExplained(item)}
+              style={{
+                display: minimizedBoxes.includes(item.name_input)
+                  ? "none"
+                  : "block",
+              }}
+            >
+              Explain
+            </button>
+          )}
+          {explainArticle === item && (
+            <form onSubmit={(event) => handleExplainArticle(event, item)}>
+              <textarea
+                className={"textarea"}
+                type="text"
+                name="explainedContent"
+                defaultValue={item.explained_content}
+                style={{ padding: "10px", marginBottom: "10px" }}
+              />
+              <button className={"button"} type="submit">
+                Submit
+              </button>
+              {isLoading && <p>Loading...</p>}
+              {isSubmitted && <p>Explanation created successfully!</p>}
+              <button
+                className={"button"}
+                type="button"
+                onClick={() => setEditArticle(null)}
+              >
+                Cancel
+              </button>
             </form>
           )}
           {!minimizedBoxes.includes(item.name_input) && (
@@ -255,6 +367,8 @@ function Home() {
               <ReactMarkdown>{item.auto_summary}</ReactMarkdown>
               <p className="subheader"> My summary:</p>
               <ReactMarkdown>{item.my_summary}</ReactMarkdown>
+              <p className="subheader"> Explained content:</p>
+              <ReactMarkdown>{item.explained_content}</ReactMarkdown>
             </>
           )}
         </div>

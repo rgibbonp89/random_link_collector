@@ -24,6 +24,7 @@ mail = "*"
 waitress = "*"
 flask-cors = "*"
 gunicorn = "*"
+pypdf2 = "*"
 
 [dev-packages]
 black = "*"
