@@ -355,7 +355,7 @@ function Home() {
               <button
                 className={"button"}
                 type="button"
-                onClick={() => setEditArticle(null)}
+                onClick={() => setArticleToBeExplained(null)}
               >
                 Cancel
               </button>

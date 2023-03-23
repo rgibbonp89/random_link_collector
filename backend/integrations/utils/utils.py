@@ -27,6 +27,8 @@ SYNTHESIS_KEY = "synthesis"
 URL_LIST_KEY = "url_list"
 SYNTHESIS_TITLE_KEY = "synthesis_title"
 EXPLAINED_CONTENT_KEY = "explained_content"
+DAILY_NOTE_TEXT_KEY = "daily_note_text"
+DATE_INPUT_KEY = "date_input"
 
 NAME_INPUT_KEY_DB = "Name"
 URL_INPUT_KEY_DB = "URL"
@@ -44,9 +46,12 @@ URL_LIST_KEY_DB = "URLList"
 NAME_LIST_KEY_DB = "NameList"
 SYNTHESIS_TITLE_KEY_DB = "SynthesisTitle"
 EXPLAINED_CONTENT_KEY_DB = "ExplainedContent"
+DAILY_NOTE_TEXT_KEY_DB = "DailyNoteText"
+DATE_INPUT_KEY_DB = "DateInput"
 
 ARTICLES_COLLECTION = "articles"
 SYNTHESIS_COLLECTION = "syntheses"
+DAILY_NOTES_COLLECTION = "notes"
 
 
 expected_keys_initial_submission: List[str] = [
@@ -86,6 +91,11 @@ SYNTHESIS_RENDER_MAPPER: Dict[str, Tuple[str, Callable]] = {
     NAME_LIST_KEY: (NAME_LIST_KEY_DB, lambda x: x),
     SYNTHESIS_KEY: (SYNTHESIS_KEY_DB, lambda x: x),
     URL_LIST_KEY: (URL_LIST_KEY_DB, lambda x: x),
+}
+
+DAILY_NOTE_RENDER_MAPPER: Dict[str, Tuple[str, Callable]] = {
+    DAILY_NOTE_TEXT_KEY: (DAILY_NOTE_TEXT_KEY_DB, lambda x: x),
+    DATE_INPUT_KEY: (DATE_INPUT_KEY_DB, lambda x: x),
 }
 
 

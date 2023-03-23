@@ -1,4 +1,5 @@
 import logging
+import re
 import json
 from typing import Dict, List, Generator, Any, Optional, Tuple, Callable
 from flask import Blueprint, request, Request
@@ -29,6 +30,10 @@ from backend.integrations.utils.utils import (
     EXPLAINED_CONTENT_KEY,
     EXPLAINED_CONTENT_KEY_DB,
     CLEANED_TEXT_KEY_DB,
+    DAILY_NOTE_RENDER_MAPPER,
+    DAILY_NOTES_COLLECTION,
+    DAILY_NOTE_TEXT_KEY,
+    DAILY_NOTE_TEXT_KEY_DB,
 )
 
 articles_blue = Blueprint("articlesblue", __name__)
@@ -222,5 +227,55 @@ def create_synthesis():
             URL_LIST_KEY_DB: [value[1] for keys, value in out_content.items()],
             NAME_LIST_KEY_DB: [value[2] for keys, value in out_content.items()],
         }
+    )
+    return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
+
+
+@articles_blue.route("/getalldailynotes", endpoint="/getalldailynotes", methods=["GET"])
+def create_synthesis():
+    return _view_all_records(
+        collection_name=DAILY_NOTES_COLLECTION, render_mapper=DAILY_NOTE_RENDER_MAPPER
+    )
+
+
+@articles_blue.route("/updatedailynote", endpoint="/updatedailynote", methods=["POST"])
+def update_daily_note():
+    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
+    doc_id: str = request_dict.get("id")
+    db, doc_ref, _, _ = _make_db_connection()
+    logger.warn(f"Request dict: {request_dict}")
+    daily_note_addition = f"""{request_dict.get(DAILY_NOTE_TEXT_KEY)}"""
+    article_doc: Dict[str, str] = (
+        db.collection(DAILY_NOTES_COLLECTION).document(doc_id).get().to_dict()
+    )
+    current_daily_note_text: str = article_doc.get(DAILY_NOTE_TEXT_KEY_DB)
+    logger.warn(f"Current daily note: {current_daily_note_text}")
+    logger.warn(f"Daily note addition: {daily_note_addition}")
+    if current_daily_note_text:
+
+        daily_note_addition = daily_note_addition.split(current_daily_note_text)
+        logger.warn(f"Split: {daily_note_addition}")
+        daily_note_addition = daily_note_addition[1]
+    else:
+        current_daily_note_text = ""
+    model_prompts = re.findall(r"{QUESTION:(.*?)}", daily_note_addition)
+    if model_prompts:
+        model_output = ""
+        daily_note_addition = re.sub(r"{QUESTION:(.*?)}", "", daily_note_addition)
+        for prompt in model_prompts:
+            new_model_output = call_model_endpoint(prompt, model=MODEL_ENGINE_LARGE)
+            model_output += f"{prompt}: {new_model_output}"
+        daily_note_addition += model_output
+    request_dict.pop("id")
+    request_dict.update(
+        {DAILY_NOTE_TEXT_KEY: current_daily_note_text + "\n" + daily_note_addition}
+    )
+    logger.warn(f"Request dict: {request_dict}")
+    db_insert_dict = {
+        DAILY_NOTE_RENDER_MAPPER.get(key)[0]: value
+        for key, value in request_dict.items()
+    }
+    add_synchronous_components_to_db(
+        db, DAILY_NOTES_COLLECTION, doc_id=doc_id, db_insert_dict=db_insert_dict
     )
     return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
