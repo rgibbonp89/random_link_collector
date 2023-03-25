@@ -12,7 +12,7 @@ from flask import request
 from backend.integrations.logins.news_login import (
     authenticate_news_site_and_return_cleaned_content,
 )
-from backend.integrations.model_enpoint import call_model_endpoint
+from backend.integrations.model_endpoint import call_model_endpoint
 from backend.integrations.utils.utils import (
     URL_INPUT_KEY,
     AUTOSUMMARY_PROMPT_KEY,

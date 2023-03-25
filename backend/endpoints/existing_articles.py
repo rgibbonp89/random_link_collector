@@ -10,7 +10,7 @@ from google.cloud.firestore_v1 import (
     DocumentReference,
 )
 from fuzzywuzzy import fuzz
-from backend.integrations.model_enpoint import call_model_endpoint, MODEL_ENGINE_LARGE
+from backend.integrations.model_endpoint import call_model_endpoint, MODEL_ENGINE_LARGE
 from backend.integrations.utils.utils import (
     add_synchronous_components_to_db,
     NAME_INPUT_KEY,
@@ -120,18 +120,35 @@ def get_all_syntheses():
 
 @articles_blue.route("/deletearticle", endpoint="deletearticle", methods=["POST"])
 def delete_single_article():
-    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
-    _, doc_ref, _, _ = _make_db_connection()
-    doc_id = request_dict.get("id")
+    (
+        db,
+        doc_ref,
+        docs,
+        list_in_first_tab,
+        doc_id,
+        request_dict,
+    ) = preprocess_request_and_make_db_connection(request)
     doc_ref.document(doc_id).delete()
     return json.dumps({"success": True}), 200, {"ContentType": "application/json"}
 
 
+def preprocess_request_and_make_db_connection(api_request):
+    request_dict: Dict[str, str] = json.loads(api_request.data.decode("utf-8"))
+    db, doc_ref, docs, list_in_first_tab = _make_db_connection()
+    doc_id = request_dict.get("id")
+    return db, doc_ref, docs, list_in_first_tab, doc_id, request_dict
+
+
 @articles_blue.route("/update_article", endpoint="/update_article", methods=["POST"])
 def update_article_flow():
-    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
-    db, doc_ref, _, _ = _make_db_connection()
-    doc_id = request_dict.get("id")
+    (
+        db,
+        doc_ref,
+        docs,
+        list_in_first_tab,
+        doc_id,
+        request_dict,
+    ) = preprocess_request_and_make_db_connection(request)
     request_dict.pop("id")
     db_insert_dict = {
         RENDER_MAPPER.get(key)[0]: value for key, value in request_dict.items()
@@ -144,9 +161,15 @@ def update_article_flow():
 
 @articles_blue.route("/getreadstatus", endpoint="/getreadstatus", methods=["POST"])
 def get_read_status():
-    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
-    db, doc_ref, _, _ = _make_db_connection()
-    doc: DocumentReference = doc_ref.document(request_dict.get("id"))
+    (
+        db,
+        doc_ref,
+        docs,
+        list_in_first_tab,
+        doc_id,
+        request_dict,
+    ) = preprocess_request_and_make_db_connection(request)
+    doc: DocumentReference = doc_ref.document(doc_id)
     return {"read_status": doc.get().to_dict().get("ReadStatus")}
 
 
@@ -154,9 +177,14 @@ def get_read_status():
     "/explainercontent", endpoint="/explainercontent", methods=["POST"]
 )
 def explainer_content():
-    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
-    doc_id: str = request_dict.get("id")
-    db, doc_ref, _, _ = _make_db_connection()
+    (
+        db,
+        doc_ref,
+        docs,
+        list_in_first_tab,
+        doc_id,
+        request_dict,
+    ) = preprocess_request_and_make_db_connection(request)
     logger.warn(f"Request dict: {request_dict}")
     prompt = f"""{request_dict.get(EXPLAINED_CONTENT_KEY)}"""
     article_doc: Dict[str, str] = (
@@ -167,7 +195,12 @@ def explainer_content():
         prompt = prompt.split(current_explained_content)[1]
     else:
         current_explained_content = ""
-    prompt_to_model = prompt.replace("${article}", article_doc.get(CLEANED_TEXT_KEY_DB))
+    if "${article}" in prompt:
+        prompt_to_model = prompt.replace(
+            "${article}", article_doc.get(CLEANED_TEXT_KEY_DB)
+        )
+    else:
+        prompt_to_model = prompt
     logger.warn(f"Prompt to model: {prompt_to_model}")
     explained_content = call_model_endpoint(prompt_to_model, model=MODEL_ENGINE_LARGE)
     request_dict.pop("id")
@@ -192,9 +225,15 @@ def explainer_content():
 
 @articles_blue.route("/createsynthesis", endpoint="/createsynthesis", methods=["POST"])
 def create_synthesis():
-    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
+    (
+        db,
+        doc_ref,
+        docs,
+        list_in_first_tab,
+        doc_id,
+        request_dict,
+    ) = preprocess_request_and_make_db_connection(request)
     ids: Optional[List[str], None] = request_dict.get("ids")
-    db, doc_ref, _, _ = _make_db_connection()
     out_content: Dict[str, List[str, str, str]] = dict()
     for id in ids:
         out_content.update(
@@ -242,9 +281,14 @@ def create_synthesis():
 
 @articles_blue.route("/updatedailynote", endpoint="/updatedailynote", methods=["POST"])
 def update_daily_note():
-    request_dict: Dict[str, str] = json.loads(request.data.decode("utf-8"))
-    doc_id: str = request_dict.get("id")
-    db, doc_ref, _, _ = _make_db_connection()
+    (
+        db,
+        doc_ref,
+        docs,
+        list_in_first_tab,
+        doc_id,
+        request_dict,
+    ) = preprocess_request_and_make_db_connection(request)
     logger.warn(f"Request dict: {request_dict}")
     daily_note_addition = f"""{request_dict.get(DAILY_NOTE_TEXT_KEY)}"""
     article_doc: Dict[str, str] = (

@@ -23,7 +23,7 @@ def call_model_endpoint(
     if not model:
         model = (
             MODEL_ENGINE_LARGE
-            if len(prompt.split()) > MODEL_THRESHOLD
+            if (len(prompt.split()) + max_tokens) > MODEL_THRESHOLD
             else MODEL_ENGINE
         )
     try:
