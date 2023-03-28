@@ -61,9 +61,16 @@ function Home() {
 
   const filteredData = jsonData.filter((item) => {
     const includesSearchQuery =
-      item.name_input.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.auto_summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.site_label.toLowerCase().includes(searchQuery.toLowerCase());
+      (item.name_input ?? "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      (item.auto_summary ?? "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      (item.explained_content ?? "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      (item.site_label ?? "").toLowerCase().includes(searchQuery.toLowerCase());
     if (readStatusFilter === "all") {
       return includesSearchQuery;
     } else if (readStatusFilter === "read") {
@@ -84,7 +91,7 @@ function Home() {
 
   const handleToggleRead = (item) => {
     const newStatus = !item.read_status; // flip the read status
-    fetch(`/update_article`, {
+    fetch(`/updatearticle`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: item.id, read_status: newStatus }),
@@ -127,7 +134,7 @@ function Home() {
       auto_summary: event.target.elements.articleAutoSummary.value,
       my_summary: event.target.elements.articleMySummary.value,
     };
-    fetch(`/update_article`, {
+    fetch(`/updatearticle`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedArticle),
@@ -143,6 +150,7 @@ function Home() {
       .catch((error) => console.error(error));
   };
   const handleExplainArticle = (event, item) => {
+    event.preventDefault();
     setIsLoading(true);
     const explainer = {
       id: item.id,
@@ -162,6 +170,7 @@ function Home() {
       .then(() => {
         setIsLoading(false);
         setIsSubmitted(true);
+        window.location.reload();
       })
       .catch((error) => console.error(error));
   };

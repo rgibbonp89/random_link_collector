@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./App.css";
 import ReactMarkdown from "react-markdown";
 import ReactPaginate from "react-paginate";
@@ -12,6 +13,7 @@ function DailyNotes() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  const navigate = useNavigate();
   const fetchDailyNotesData = () => {
     const queryParams = `?timestamp=${new Date().getTime()}`;
     fetch(`/getalldailynotes${queryParams}`)
@@ -43,12 +45,19 @@ function DailyNotes() {
         setIsLoading(false);
         setIsSubmitted(true);
       })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
       .then((data) => {
         setJsonData((prevData) =>
           prevData.map((d) =>
             d.id === item.id ? { ...d, ...updatedDailyNote } : d
           )
         );
+        window.location.reload();
       })
       .catch((error) => console.error(error));
   };
@@ -80,6 +89,8 @@ function DailyNotes() {
     const queryParams = `?timestamp=${new Date().getTime()}`;
     fetch(`/createnewdailynote${queryParams}`)
       .then((response) => response.json())
+      .then(() => {
+      })
       .catch((error) => console.error(error));
   };
 
@@ -92,15 +103,17 @@ function DailyNotes() {
       <input
         className={"search-bar"}
         type="text"
-        placeholder="Search articles..."
+        placeholder="Search notes..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
       />
       <button
-          className={'button'}
-          style={{marginLeft:50}}
-          onClick={() => createNewDailyNote()}
-      >Create new daily note</button>
+        className={"button"}
+        style={{ marginLeft: 50 }}
+        onClick={() => createNewDailyNote()}
+      >
+        Create new daily note
+      </button>
       {currentPageData.map((item) => (
         <div
           key={item.date_input}
@@ -111,7 +124,7 @@ function DailyNotes() {
                    : ""
                }`}
         >
-            <h2>{item.date_input}</h2>
+          <h2>{item.date_input}</h2>
           <button
             className={"button"}
             onClick={() => handleDailyNoteBoxMinimize(item.date_input)}
