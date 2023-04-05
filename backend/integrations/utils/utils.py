@@ -62,6 +62,10 @@ class DB(str, Enum):
     DAILY_NOTES_COLLECTION = "notes"
 
 
+class ContentHandler(str, Enum):
+    LENGTH_TOO_LONG = "This model's maximum context length"
+
+
 expected_keys_initial_submission: List[str] = [
     FrontendReferences.NAME_INPUT_KEY,
     FrontendReferences.URL_INPUT_KEY,

@@ -18,14 +18,19 @@ from backend.integrations.utils.utils import (
     RENDER_MAPPER,
     FrontendReferences,
     DB,
+    ContentHandler,
+    DBReferences,
 )
 from backend.integrations.utils.utils import (
     add_synchronous_components_to_db,
     add_async_components_to_db,
 )
 
+import logging
+
 load_dotenv()
 
+logger = logging.getLogger(__name__)
 
 db: Client = firestore.Client.from_service_account_json(
     f"{Path(__file__).parent.parent.parent}/.keys/firebase.json"
@@ -74,14 +79,25 @@ def _submit_article(service) -> None:
         db_insert_dict=db_insert_dict,
     )
 
-    model_response_text = call_model_endpoint(
+    model_response_text: str = call_model_endpoint(
         prompt, max_tokens=int(request_dict.get("max_tokens", 500))
     )
+    text_too_long = model_response_text.startswith(ContentHandler.LENGTH_TOO_LONG)
+    if text_too_long:
+        logger.warn("Text too long, saving just the title.")
+        model_response_text = db_insert_dict[DBReferences.NAME_INPUT_KEY_DB]
+
     if formatted_text:
-        one_liner_prompt = f"Can you summarize this in one line: {model_response_text}?"
-        one_liner = call_model_endpoint(
-            one_liner_prompt, max_tokens=int(request_dict.get("max_tokens", 500))
-        )
+        if text_too_long:
+            logger.warn("Text too long, no short summary")
+            one_liner = db_insert_dict[DBReferences.NAME_INPUT_KEY_DB]
+        else:
+            one_liner_prompt = (
+                f"Can you summarize this in one line: {model_response_text}?"
+            )
+            one_liner = call_model_endpoint(
+                one_liner_prompt, max_tokens=int(request_dict.get("max_tokens", 500))
+            )
     else:
         one_liner = model_response_text
 

@@ -26,6 +26,8 @@ CLEANR = re.compile("<.*?>")
 
 logger = logging.getLogger(__name__)
 
+PROTECTED_SITES = ["ft.com", "nytimes.com"]
+
 
 def authentication_and_parse_flow(
     article_url: str,
@@ -73,7 +75,7 @@ def authenticate_news_site_and_return_cleaned_content(
 ) -> Union[str, None]:
     today = date.today()
     window = today - timedelta(days=1)
-    if "ft.com" in article_url:
+    if any(site in article_url for site in PROTECTED_SITES):
         logger.warn("This is an FT article, so skipping content scraping.")
         return None
     if article_url.endswith(".pdf"):
