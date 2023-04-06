@@ -12,29 +12,29 @@ from flask import request
 from backend.integrations.logins.news_login import (
     authenticate_news_site_and_return_cleaned_content,
 )
-from backend.integrations.model_enpoint import call_model_endpoint
+from backend.integrations.model_endpoint import call_model_endpoint
 from backend.integrations.utils.utils import (
-    URL_INPUT_KEY,
-    AUTOSUMMARY_PROMPT_KEY,
     _validate_request_for_initial_submission,
-    SITE_LABEL_KEY,
     RENDER_MAPPER,
-    READ_STATUS_KEY,
-    NAME_INPUT_KEY,
+    FrontendReferences,
+    DB,
+    ContentHandler,
+    DBReferences,
 )
 from backend.integrations.utils.utils import (
     add_synchronous_components_to_db,
     add_async_components_to_db,
 )
 
+import logging
+
 load_dotenv()
 
+logger = logging.getLogger(__name__)
 
 db: Client = firestore.Client.from_service_account_json(
     f"{Path(__file__).parent.parent.parent}/.keys/firebase.json"
 )
-
-ARTICLE_COLLECTION = "articles"
 
 
 def _submit_article(service) -> None:
@@ -43,25 +43,27 @@ def _submit_article(service) -> None:
     formatted_text: Union[
         str, None
     ] = authenticate_news_site_and_return_cleaned_content(
-        service, article_url=request_dict.get(URL_INPUT_KEY)
+        service, article_url=request_dict.get(FrontendReferences.URL_INPUT_KEY)
     )
     if formatted_text:
         prompt = (
             f"Can you provide a TL;DR of the following text: {formatted_text}? "
             f"Please provide your answer in bullet points in markdown."
-            if not request_dict.get(AUTOSUMMARY_PROMPT_KEY)
-            else request_dict.get(AUTOSUMMARY_PROMPT_KEY)
+            if not request_dict.get(FrontendReferences.AUTOSUMMARY_PROMPT_KEY)
+            else request_dict.get(FrontendReferences.AUTOSUMMARY_PROMPT_KEY)
         )
     else:
         prompt = f"""Just return the following article title (this is pass-through logic in an app):
-        {request_dict.get(NAME_INPUT_KEY)}"""
+        {request_dict.get(FrontendReferences.NAME_INPUT_KEY)}"""
 
     # clean this up and make it generic (update_request fn)
-    request_dict.update({AUTOSUMMARY_PROMPT_KEY: prompt})
+    request_dict.update({FrontendReferences.AUTOSUMMARY_PROMPT_KEY: prompt})
     request_dict.update(
         {
-            SITE_LABEL_KEY: urlparse(request_dict.get(URL_INPUT_KEY)).netloc,
-            READ_STATUS_KEY: False,
+            FrontendReferences.SITE_LABEL_KEY: urlparse(
+                request_dict.get(FrontendReferences.URL_INPUT_KEY)
+            ).netloc,
+            FrontendReferences.READ_STATUS_KEY: False,
         }
     )
 
@@ -73,25 +75,36 @@ def _submit_article(service) -> None:
 
     doc_id = add_synchronous_components_to_db(
         db=db,
-        collection_name=ARTICLE_COLLECTION,
+        collection_name=DB.ARTICLES_COLLECTION,
         db_insert_dict=db_insert_dict,
     )
 
-    model_response_text = call_model_endpoint(
+    model_response_text: str = call_model_endpoint(
         prompt, max_tokens=int(request_dict.get("max_tokens", 500))
     )
+    text_too_long = model_response_text.startswith(ContentHandler.LENGTH_TOO_LONG)
+    if text_too_long:
+        logger.warn("Text too long, saving just the title.")
+        model_response_text = db_insert_dict[DBReferences.NAME_INPUT_KEY_DB]
+
     if formatted_text:
-        one_liner_prompt = f"Can you summarize this in one line: {model_response_text}?"
-        one_liner = call_model_endpoint(
-            one_liner_prompt, max_tokens=int(request_dict.get("max_tokens", 500))
-        )
+        if text_too_long:
+            logger.warn("Text too long, no short summary")
+            one_liner = db_insert_dict[DBReferences.NAME_INPUT_KEY_DB]
+        else:
+            one_liner_prompt = (
+                f"Can you summarize this in one line: {model_response_text}?"
+            )
+            one_liner = call_model_endpoint(
+                one_liner_prompt, max_tokens=int(request_dict.get("max_tokens", 500))
+            )
     else:
         one_liner = model_response_text
 
     asyncio.run(
         add_async_components_to_db(
             db,
-            ARTICLE_COLLECTION,
+            DB.ARTICLES_COLLECTION,
             doc_id,
             model_response_text,
             cleaned_text=formatted_text,

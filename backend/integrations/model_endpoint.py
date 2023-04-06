@@ -1,15 +1,26 @@
-from typing import Optional
+from enum import Enum
+from typing import Optional, Union, Any
 
 import openai
 from dotenv import load_dotenv
 from openai import Completion
 import os
 
-MODEL_ENGINE = "gpt-3.5-turbo"
-MODEL_ENGINE_LARGE = "gpt-4"
-MAX_TOKENS = 500
-TEMPERATURE = 0.01
-MODEL_THRESHOLD = 3000
+
+class Models(str, Enum):
+    MODEL_ENGINE = "gpt-3.5-turbo"
+    MODEL_ENGINE_LARGE = "gpt-4"
+
+
+class ModelIntHyperParams(int, Enum):
+    MAX_TOKENS = 500
+    MODEL_THRESHOLD = 3000
+
+
+class ModelFloatHyperParams(float, Enum):
+    TEMPERATURE = 0.01
+
+
 load_dotenv()
 
 openai.api_key = os.environ.get("OPENAI_KEY")
@@ -22,9 +33,9 @@ def call_model_endpoint(
 ):
     if not model:
         model = (
-            MODEL_ENGINE_LARGE
-            if len(prompt.split()) > MODEL_THRESHOLD
-            else MODEL_ENGINE
+            Models.MODEL_ENGINE_LARGE
+            if (len(prompt.split()) + max_tokens) > ModelIntHyperParams.MODEL_THRESHOLD
+            else Models.MODEL_ENGINE
         )
     try:
         completion: Completion = openai.ChatCompletion.create(
@@ -32,7 +43,7 @@ def call_model_endpoint(
             messages=[{"role": "user", "content": prompt}],
             n=1,
             max_tokens=max_tokens,
-            temperature=TEMPERATURE,
+            temperature=ModelFloatHyperParams.TEMPERATURE,
         )
         saved_text = (
             completion.choices[0]
