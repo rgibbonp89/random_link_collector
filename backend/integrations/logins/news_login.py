@@ -76,7 +76,7 @@ def authenticate_news_site_and_return_cleaned_content(
     today = date.today()
     window = today - timedelta(days=1)
     if any(site in article_url for site in PROTECTED_SITES):
-        logger.warn("This is an FT article, so skipping content scraping.")
+        logger.warn(f"This is an f{article_url} article, so skipping content scraping.")
         return None
     if article_url.endswith(".pdf"):
         logger.warn("PDF article detected.")
